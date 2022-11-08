@@ -10,10 +10,11 @@ def declare_list(sort):
 
 Int257 = BitVecSort(257)
 CellDataIndex = BitVecSort(10)
+CellData = BitVecSort(1023)
 CellRefIndex = BitVecSort(2)
 
 Cell = Datatype('Cell')
-Cell.declare('cell', ('data', BitVecSort(1023)))
+Cell.declare('cell', ('data', CellData), ('len', CellDataIndex))
 Cell = Cell.create()
 
 Slice = Datatype('Slice')
