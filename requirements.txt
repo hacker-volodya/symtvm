@@ -1,2 +1,4 @@
 git+https://github.com/toncenter/tvm_valuetypes
 z3-solver==4.11.2.0
+bitarray==2.6.0
+ipython==8.6.0

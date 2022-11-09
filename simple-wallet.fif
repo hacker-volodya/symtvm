@@ -1,5 +1,7 @@
 // from https://github.com/ton-blockchain/ton/blob/master/crypto/smartcont/gen-zerostate-test.fif
 
+"Asm.fif" include
+
 <{ SETCP0 DUP IFNOTRET // return if recv_internal
    DUP 85143 INT EQUAL IFJMP:<{ // "seqno" get-method
      DROP c4 PUSHCTR CTOS 32 PLDU  // cnt
@@ -18,3 +20,5 @@
    SWAP SENDRAWMSG       // pubk cnt ; ( message sent )
    INC NEWC 32 STU 256 STU ENDC c4 POPCTR
 }>c
+
+2 boc+>B "simple-wallet.boc" tuck B>file
