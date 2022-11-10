@@ -78,3 +78,9 @@ class ConcreteSlice(tvm_valuetypes.Cell):
         bits = self.preload_bits(num)
         self.skip_bits(num)
         return bits
+
+    def copy(self):
+        new_instance = ConcreteSlice(super(ConcreteSlice, self).copy())
+        new_instance.data_off = self.data_off
+        new_instance.refs_off = self.refs_off
+        return new_instance

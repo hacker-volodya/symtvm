@@ -13,9 +13,9 @@ class TvmState:
         if stack is None:
             stack = []
         if regs is None:
-            regs = [
+            regs = {
                 # default regs value
-            ]
+            }
         if constraints is None:
             constraints = []
         self.constraints = constraints
@@ -29,9 +29,15 @@ class TvmState:
         self.gm = gm
 
     def copy(self):
-        return self.__init__(self.cc.copy(), self.stack.copy(), self.actions.copy(), self.regs.copy(), self.constraints.copy(), self.gl,
-                             self.gc, self.gr,
-                             self.gm)
+        return TvmState(self.cc.copy(),
+                        self.stack.copy(),
+                        self.actions.copy(),
+                        self.regs.copy(),
+                        self.constraints.copy(),
+                        self.gl,
+                        self.gc,
+                        self.gr,
+                        self.gm)
 
     @classmethod
     def send_message(cls, code: ConcreteSlice, data: Cell, body: Cell, selector: Int257):

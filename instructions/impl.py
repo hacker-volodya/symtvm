@@ -1,26 +1,9 @@
-from typing import Dict
-
 from z3 import *
 
-from tvm_instruction import TvmInstruction
+from instructions.registry import insn
 from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex
 from tvm_state import TvmState
 from tvm_successors import Successors
-
-INSTRUCTIONS: Dict[str, TvmInstruction] = {}
-
-
-def match_insn_prefix(prefix):
-    return [k for k in INSTRUCTIONS.keys() if k.startswith(prefix)]
-
-
-def insn(pattern):
-    def func_wrapper(func, pattern=pattern):
-        i = TvmInstruction(func, pattern)
-        INSTRUCTIONS[i.pattern_tokens[0].val] = i
-        return func
-
-    return func_wrapper
 
 
 @insn("FF00")

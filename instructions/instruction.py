@@ -25,7 +25,8 @@ class TvmInstruction:
                     self.pattern_tokens.append(TvmInstruction.ConstPattern())
                 self.pattern_tokens[-1].val += c
             elif c in string.ascii_lowercase:
-                if type(self.pattern_tokens[-1]) is TvmInstruction.ConstPattern or self.pattern_tokens[-1].var_name != c:
+                if type(self.pattern_tokens[-1]) is TvmInstruction.ConstPattern or \
+                        self.pattern_tokens[-1].var_name != c:
                     self.pattern_tokens.append(TvmInstruction.VarPattern(c))
                 self.pattern_tokens[-1].size += 1
 

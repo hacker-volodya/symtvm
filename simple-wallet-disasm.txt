@@ -1,0 +1,48 @@
+ff00        SETCP0
+20          DUP
+dd          IFNOTRET
+20          DUP
+82014c97    85143 INT
+ba          EQUAL
+97          PUSHCONT (7 bytes)
+<{
+    30      DROP
+    ed44    c4 PUSHCTR
+    d0      CTOS
+    d70b1f  32 PLDU
+}>
+e0          IFJMP
+a4          INC
+f260        32 THROWIF
+810200      512 INT
+d718        LDSLICEX
+20          DUP
+d70b1f      32 PLDU
+ed44        c4 PUSHCTR
+d0          CTOS
+d31f        32 LDU
+d3ff        256 LDU
+d1          ENDS
+5112        s1 s2 XCPU
+ba          EQUAL
+f2a1        33 THROWIFNOT
+22          s2 PUSH
+f901        HASHSU
+541044      s0 s4 s4 XC2PU
+f910        CHKSIGNU
+f2a2        34 THROWIFNOT
+f800        ACCEPT
+01          SWAP
+d31f        32 LDU
+31          NIP
+d307        8 LDU
+d4          LDREF
+d1          ENDS
+01          SWAP
+fb00        SENDRAWMSG
+a4          INC
+c8          NEWC
+cb1f        32 STU
+cbff        256 STU
+c9          ENDC
+ed54        c4 POPCTR

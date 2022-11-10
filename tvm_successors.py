@@ -17,7 +17,6 @@ class Successors:
         self.finished.append(state)
 
     def add_err(self, successors: 'Successors'):
-        self.succeed += successors.succeed
         self.errored += successors.errored
 
     def single_ok(self):
