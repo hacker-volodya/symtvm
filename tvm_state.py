@@ -29,7 +29,7 @@ class TvmState:
         self.gm = gm
 
     def copy(self):
-        return self.__init__(self.cc.copy(), self.stack[:], self.actions[:], self.regs[:], self.constraints[:], self.gl,
+        return self.__init__(self.cc.copy(), self.stack.copy(), self.actions.copy(), self.regs.copy(), self.constraints.copy(), self.gl,
                              self.gc, self.gr,
                              self.gm)
 
