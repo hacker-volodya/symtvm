@@ -62,6 +62,6 @@ class TvmState:
 
 class TvmErrorState:
     def __init__(self, parent_state: TvmState, exception: Union[Exception, str], constraints: List[BoolRef]):
-        self.parent_state = parent_state
+        self.parent_state = parent_state.copy()
         self.exception = exception
         self.constraints = constraints
