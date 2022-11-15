@@ -20,7 +20,6 @@ def disasm(cc: ConcreteSlice) -> str:
         while len(cc.data.data) > cc.data_off:
             insn = parse_instruction(cc)
             args = insn.try_decode(cc)
-            assert args is not None, f"decode failed for insn {insn.handler.__name__}"
             result.append(f"{cc.data_off}: {insn.handler.__name__} {args}")
     except Exception as e:
         result.append(f"{cc.data_off}: (ERROR) {e}")

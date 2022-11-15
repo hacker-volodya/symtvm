@@ -15,7 +15,10 @@ class TvmInstruction:
             self.var_name = var_name
             self.size = 0
 
-    def __init__(self, handler, pattern):
+    def __init__(self, handler, pattern, custom_decoders=None):
+        if custom_decoders is None:
+            custom_decoders = {}
+        self.custom_decoders = custom_decoders
         self.handler = handler
         self.pattern = pattern
         self.pattern_tokens = [TvmInstruction.ConstPattern()]
@@ -32,22 +35,18 @@ class TvmInstruction:
 
     def try_decode(self, cc: ConcreteSlice):
         kwargs = {}
-        preloaded_bits = 0
-        try:
-            for token in self.pattern_tokens:
-                if type(token) is TvmInstruction.ConstPattern:
-                    bits = cc.preload_bits(4 * len(token.val))
-                    preloaded_bits += 4 * len(token.val)
-                    if bits != hex2ba(token.val):
-                        return None
-                elif type(token) is TvmInstruction.VarPattern:
-                    bits = cc.preload_bits(4 * token.size)
-                    preloaded_bits += 4 * token.size
+        for token in self.pattern_tokens:
+            if type(token) is TvmInstruction.ConstPattern:
+                bits = cc.load_bits(4 * len(token.val))
+                if bits != hex2ba(token.val):
+                    return None
+            elif type(token) is TvmInstruction.VarPattern:
+                if self.custom_decoders.get(token.var_name) is not None:
+                    kwargs[token.var_name] = self.custom_decoders[token.var_name](cc, kwargs, token.size)
+                else:
+                    bits = cc.load_bits(4 * token.size)
                     kwargs[token.var_name] = ba2int(bits, signed=True)
-            cc.skip_bits(preloaded_bits)
-            return kwargs
-        except Exception as e:
-            return None
+        return kwargs
 
     def __repr__(self):
         return f"{self.handler.__name__} <{self.pattern}>"

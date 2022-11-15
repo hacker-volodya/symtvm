@@ -1,3 +1,4 @@
+from bitarray.util import ba2int
 from z3 import *
 
 from instructions.registry import insn
@@ -148,6 +149,17 @@ def push_const_smallint(state: TvmState, i):
 @insn("80xx")
 @insn("81xxxx")
 def push_const_int(state: TvmState, x):
+    successors = Successors()
+    state.push(StackEntry.int(x))
+    successors.ok(state)
+    return successors
+
+
+@insn("82lxxx", custom_decoders={
+    "l": lambda cc, kwargs, size: ba2int(cc.load_bits(5), signed=False),
+    "x": lambda cc, kwargs, size: ba2int(cc.load_bits(8 * kwargs["l"] + 19), signed=True),
+})
+def push_const_int_wide(state: TvmState, l, x):
     successors = Successors()
     state.push(StackEntry.int(x))
     successors.ok(state)
