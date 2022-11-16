@@ -19,11 +19,11 @@ Cell.declare('cell', ('data', CellData), ('data_len', CellDataIndex))
 Cell = Cell.create()
 
 Slice = Datatype('Slice')
-Slice.declare('slice', ('cell', Cell), ('data_pos', CellDataIndex))
+Slice.declare('slice', ('cell', Cell))
 Slice = Slice.create()
 
 Continuation = Datatype('Continuation')
-Continuation.declare('Continuation', ('cell', Cell), ('data_pos', CellDataIndex))
+Continuation.declare('Continuation', ('cell', Cell))
 Continuation = Continuation.create()
 
 StackEntry = Datatype('StackEntry')
