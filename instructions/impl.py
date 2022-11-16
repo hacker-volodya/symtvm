@@ -3,7 +3,7 @@ from z3 import *
 
 from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
-from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice
+from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Slice, Int257
 from tvm_state import TvmState
 from tvm_successors import Successors
 
@@ -199,6 +199,33 @@ def equal(state: TvmState):
     return successors
 
 
+@insn("D0")
+def ctos(state: TvmState):
+    successors = Successors()
+    state.push(StackEntry.slice(Slice.slice(StackEntry.cell_val(state.pop()))))
+    successors.ok(state)
+    return successors
+
+
+@insn("D70Bcc")
+def pldu(state: TvmState, c):
+    successors = Successors()
+    s = Slice.cell(StackEntry.slice_val(state.pop()))
+    state.push(StackEntry.int(Int257.cast(ZeroExt(1, Extract(255, 0, Cell.data(s) >> (1023 - (c + 1)))))))
+    successors.ok(state)
+    return successors
+
+
+@insn("D718")
+def ldslicex(state: TvmState):
+    successors = Successors()
+    l = StackEntry.int_val(state.pop())
+    s = Slice.cell(StackEntry.slice_val(state.pop()))
+    s1 = Cell.data(s) >> (1023 - l)
+    #successors.ok(state)
+    return successors
+
+
 @insn("D9")
 def jmpx(state: TvmState):
     successors = Successors()
@@ -238,6 +265,26 @@ def ifjmp(state: TvmState):
     state.constraints.append(cond == StackEntry.int(0))
     successors.ok(state)
     return successors
+
+
+@insn("ED4i")
+def pushctr(state: TvmState, i: int):
+    successors = Successors()
+    if state.regs.get(i) is None:
+        reg_val = Const(f"regs_c{i}", Cell)
+        state.push(StackEntry.cell(reg_val))
+        state.regs[i] = reg_val
+    else:
+        state.push(StackEntry.cell(state.regs[i]))
+    successors.ok(state)
+    return successors
+
+
+@insn("ED5i")
+def popctr(state: TvmState, i: int):
+    successors = Successors()
+    state.regs[i] = StackEntry.cell_val(state.pop())
+    successors.ok(state)
 
 
 @insn("F26_n")
