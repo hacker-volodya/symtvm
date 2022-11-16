@@ -1,7 +1,7 @@
 import tvm_valuetypes
-from bitarray.util import ba2int
 from z3 import *
 
+from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
 from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice
 from tvm_state import TvmState
@@ -43,7 +43,7 @@ def sub(state: TvmState):
     return successors
 
 
-@insn("A6cc")
+@insn("A6cc", custom_decoders={"c": load_int})
 def addconst(state: TvmState, c):
     successors = Successors()
     a = StackEntry.int_val(state.pop())
@@ -141,14 +141,16 @@ def nip(state: TvmState):
 
 @insn("7i")
 def push_const_smallint(state: TvmState, i):
+    if i > 10:
+        i -= 16
     successors = Successors()
     state.push(i)
     successors.ok(state)
     return successors
 
 
-@insn("80xx")
-@insn("81xxxx")
+@insn("80xx", custom_decoders={"x": load_int})
+@insn("81xxxx", custom_decoders={"x": load_int})
 def push_const_int(state: TvmState, x):
     successors = Successors()
     state.push(StackEntry.int(x))
@@ -157,8 +159,8 @@ def push_const_int(state: TvmState, x):
 
 
 @insn("82lxxx", custom_decoders={
-    "l": lambda cc, kwargs, size: ba2int(cc.load_bits(5), signed=False),
-    "x": lambda cc, kwargs, size: ba2int(cc.load_bits(8 * kwargs["l"] + 19), signed=True),
+    "l": lambda cc, kwargs, size: load_uint(cc, None, 5),
+    "x": lambda cc, kwargs, size: load_int(cc, None, 8 * kwargs["l"] + 19),
 })
 def push_const_int_wide(state: TvmState, l, x):
     successors = Successors()
@@ -168,7 +170,6 @@ def push_const_int_wide(state: TvmState, l, x):
 
 
 @insn("9xccc", custom_decoders={
-    "x": lambda cc, kwargs, size: ba2int(cc.load_bits(4), signed=False),
     "c": lambda cc, kwargs, size: cc.load_bits(kwargs["x"] * 8),
 })
 def cont(state: TvmState, x, c):
@@ -241,7 +242,6 @@ def ifjmp(state: TvmState):
 
 @insn("F26_n")
 def throwif(state: TvmState, n: int):
-    n %= 64  # unsigned
     successors = Successors()
     f = state.pop()
     throw_state = state.copy()

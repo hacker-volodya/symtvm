@@ -3,6 +3,7 @@ import string
 from bitarray.util import ba2int
 
 from instructions.bit_utils import hex2ba
+from instructions.operand_parsers import load_uint
 from tvm_primitives import ConcreteSlice
 
 
@@ -48,8 +49,7 @@ class TvmInstruction:
                 if self.custom_decoders.get(token.var_name) is not None:
                     kwargs[token.var_name] = self.custom_decoders[token.var_name](cc, kwargs, rem + 4 * token.size)
                 else:
-                    bits = cc.load_bits(rem + 4 * token.size)
-                    kwargs[token.var_name] = ba2int(bits, signed=True)
+                    kwargs[token.var_name] = load_uint(cc, None, rem + 4 * token.size)
                 rem = 0
         return kwargs
 
