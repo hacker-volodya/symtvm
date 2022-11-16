@@ -5,6 +5,9 @@ from tvm_successors import Successors
 
 def step(state: TvmState) -> Successors:
     successors = Successors()
+    if state.cc.data_off == len(state.cc.data.data):
+        successors.finish(state)
+        return successors
     try:
         instruction = parse_instruction(state.cc)
     except Exception as e:
@@ -18,7 +21,7 @@ def step(state: TvmState) -> Successors:
     try:
         return instruction.handler(state, **args)
     except Exception as e:
-        successors.err(state.error(f"insn execution error: {e}", []))
+        successors.err(state.error(f"insn execution error: {e}, {e!r}", []))
         return successors
 
 
