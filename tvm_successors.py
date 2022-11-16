@@ -29,4 +29,4 @@ class Successors:
         return self.succeed
 
     def __repr__(self):
-        return f"{len(self.succeed)} succeed, {len(self.errored)} errored"
+        return f"{len(self.succeed)} succeed, {len(self.errored)} errored, {len(self.finished)} finished"

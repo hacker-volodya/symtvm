@@ -65,6 +65,9 @@ class TvmState:
     def error(self, exception: Union[Exception, str], constraints: List[BoolRef]):
         return TvmErrorState(self, exception, self.constraints + constraints)
 
+    def __repr__(self):
+        return f"TvmState @ {self.cc.hash().hex()[:6]}:{self.cc.data_off}"
+
 
 class TvmErrorState:
     def __init__(self, parent_state: TvmState, exception: Union[Exception, str], constraints: List[BoolRef]):
