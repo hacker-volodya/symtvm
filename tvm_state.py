@@ -74,3 +74,6 @@ class TvmErrorState:
         self.parent_state = parent_state.copy()
         self.exception = exception
         self.constraints = constraints
+
+    def __repr__(self):
+        return f"TvmErrorState <{self.parent_state!r}>: {self.exception}"
