@@ -211,7 +211,7 @@ def ctos(state: TvmState):
 def pldu(state: TvmState, c):
     successors = Successors()
     s = Slice.cell(StackEntry.slice_val(state.pop()))
-    state.push(StackEntry.int(Int257.cast(ZeroExt(1, Extract(255, 0, Cell.data(s) >> (1023 - (c + 1)))))))
+    state.push(StackEntry.int(Int257.cast(ZeroExt(1, Extract(255, 0, LShR(Cell.data(s), 1023 - (c + 1)))))))
     successors.ok(state)
     return successors
 
