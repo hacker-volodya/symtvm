@@ -16,6 +16,11 @@ class Successors:
     def finish(self, state: TvmState):
         self.finished.append(state)
 
+    def add_all(self, successors: 'Successors'):
+        self.succeed += successors.succeed
+        self.errored += successors.errored
+        self.finished += successors.finished
+
     def add_err(self, successors: 'Successors'):
         self.errored += successors.errored
 

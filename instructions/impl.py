@@ -1,8 +1,9 @@
+import tvm_valuetypes
 from bitarray.util import ba2int
 from z3 import *
 
 from instructions.registry import insn
-from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex
+from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice
 from tvm_state import TvmState
 from tvm_successors import Successors
 
@@ -166,6 +167,19 @@ def push_const_int_wide(state: TvmState, l, x):
     return successors
 
 
+@insn("9xccc", custom_decoders={
+    "x": lambda cc, kwargs, size: ba2int(cc.load_bits(4), signed=False),
+    "c": lambda cc, kwargs, size: cc.load_bits(kwargs["x"] * 8),
+})
+def cont(state: TvmState, x, c):
+    successors = Successors()
+    continuation = ConcreteSlice(tvm_valuetypes.Cell())
+    continuation.data.data = c
+    state.push(continuation)
+    successors.ok(state)
+    return successors
+
+
 @insn("C8")
 def newc(state: TvmState):
     successors = Successors()
@@ -184,6 +198,16 @@ def equal(state: TvmState):
     return successors
 
 
+@insn("D9")
+def jmpx(state: TvmState):
+    successors = Successors()
+    continuation = state.pop()
+    assert type(continuation) == ConcreteSlice, "Continuation must be concrete"
+    state.cc = continuation
+    successors.ok(state)
+    return successors
+
+
 @insn("DD")
 def ifnotret(state: TvmState):
     successors = Successors()
@@ -197,4 +221,36 @@ def ifnotret(state: TvmState):
         successors.finish(ret_state)
     state.constraints.append(a != StackEntry.int(0))
     successors.ok(state)
+    return successors
+
+
+@insn("E0")
+def ifjmp(state: TvmState):
+    successors = Successors()
+    continuation = state.pop()
+    cond = state.pop()
+    assert type(continuation) == ConcreteSlice, "Continuation must be concrete"
+    state_jmp = state.copy()
+    state_jmp.constraints.append(cond != StackEntry.int(0))
+    state_jmp.cc = continuation
+    successors.ok(state_jmp)
+    state.constraints.append(cond == StackEntry.int(0))
+    successors.ok(state)
+    return successors
+
+
+@insn("F26_n")
+def throwif(state: TvmState, n: int):
+    successors = Successors()
+    f = state.pop()
+    throw_state = state.copy()
+    throw_state.constraints.append(f != StackEntry.int(0))
+    throw_state.stack = [StackEntry.int(0), StackEntry.int(n)]
+    state.constraints.append(f == StackEntry.int(0))
+    successors.ok(state)
+    if throw_state.regs.get(2) is not None:
+        throw_state.cc = throw_state.regs[2]
+        successors.ok(throw_state)
+    else:
+        successors.finish(throw_state)
     return successors

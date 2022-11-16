@@ -1,7 +1,8 @@
 import string
 
-from bitarray.util import hex2ba, ba2int
+from bitarray.util import ba2int
 
+from instructions.bit_utils import hex2ba
 from tvm_primitives import ConcreteSlice
 
 
@@ -23,7 +24,7 @@ class TvmInstruction:
         self.pattern = pattern
         self.pattern_tokens = [TvmInstruction.ConstPattern()]
         for c in self.pattern:
-            if c in string.digits + string.ascii_uppercase:
+            if c in string.digits + string.ascii_uppercase + "_":
                 if type(self.pattern_tokens[-1]) is TvmInstruction.VarPattern:
                     self.pattern_tokens.append(TvmInstruction.ConstPattern())
                 self.pattern_tokens[-1].val += c
@@ -35,17 +36,21 @@ class TvmInstruction:
 
     def try_decode(self, cc: ConcreteSlice):
         kwargs = {}
+        rem = 0
         for token in self.pattern_tokens:
             if type(token) is TvmInstruction.ConstPattern:
-                bits = cc.load_bits(4 * len(token.val))
-                if bits != hex2ba(token.val):
+                const = hex2ba(token.val)
+                bits = cc.load_bits(len(const))
+                if bits != const:
                     return None
+                rem = (4 - len(const) % 4) % 4
             elif type(token) is TvmInstruction.VarPattern:
                 if self.custom_decoders.get(token.var_name) is not None:
-                    kwargs[token.var_name] = self.custom_decoders[token.var_name](cc, kwargs, token.size)
+                    kwargs[token.var_name] = self.custom_decoders[token.var_name](cc, kwargs, rem + 4 * token.size)
                 else:
-                    bits = cc.load_bits(4 * token.size)
+                    bits = cc.load_bits(rem + 4 * token.size)
                     kwargs[token.var_name] = ba2int(bits, signed=True)
+                rem = 0
         return kwargs
 
     def __repr__(self):

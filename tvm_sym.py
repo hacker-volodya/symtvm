@@ -10,9 +10,10 @@ def step(state: TvmState) -> Successors:
     except Exception as e:
         successors.err(state.error(f"insn parsing err: {e}", []))
         return successors
-    args = instruction.try_decode(state.cc)
-    if args is None:
-        successors.err(state.error(f"insn decoding err", []))
+    try:
+        args = instruction.try_decode(state.cc)
+    except Exception as e:
+        successors.err(state.error(f"insn decoding err: {e}", []))
         return successors
     try:
         return instruction.handler(state, **args)

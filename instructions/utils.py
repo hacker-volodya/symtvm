@@ -1,16 +1,25 @@
+from typing import List
+
+from bitarray import bitarray
+
+from instructions.bit_utils import ba2hex
 from instructions.instruction import TvmInstruction
 from instructions.registry import INSTRUCTIONS
 from tvm_primitives import ConcreteSlice
 
 
 def parse_instruction(cc: ConcreteSlice) -> TvmInstruction:
-    nibbles = 1
-    preload_prefix = lambda nibbles: cc.preload_bits(4 * nibbles).tobytes().hex()[:nibbles].upper()
-    while len(match_insn_prefix(preload_prefix(nibbles))) > 1:
-        nibbles += 1
-    if len(match_insn_prefix(preload_prefix(nibbles))) == 0:
-        raise RuntimeError(f"unknown instruction with prefix {preload_prefix(nibbles)}")
-    return INSTRUCTIONS[match_insn_prefix(preload_prefix(nibbles))[0]]
+    bits = 1
+    get_ops_with_prefix = lambda bits: match_insn_prefix(cc.preload_bits(bits))
+    while len(get_ops_with_prefix(bits)) > 1:
+        bits += 1
+    ops_list = get_ops_with_prefix(bits)
+    if len(get_ops_with_prefix(bits)) == 0:
+        raise RuntimeError(f"unknown instruction with prefix {ba2hex(cc.preload_bits(bits))}")
+    if ops_list[0] != cc.preload_bits(len(ops_list[0])):
+        raise RuntimeError(f"unknown instruction: matched prefix {ba2hex(cc.preload_bits(bits))} \
+({INSTRUCTIONS[ops_list[0].to01()].handler.__name__}), got {ba2hex(cc.preload_bits(len(ops_list[0])))}")
+    return INSTRUCTIONS[ops_list[0].to01()]
 
 
 def disasm(cc: ConcreteSlice) -> str:
@@ -26,5 +35,5 @@ def disasm(cc: ConcreteSlice) -> str:
     return '\n'.join(result)
 
 
-def match_insn_prefix(prefix):
-    return [k for k in INSTRUCTIONS.keys() if k.startswith(prefix)]
+def match_insn_prefix(prefix: bitarray) -> List[bitarray]:
+    return [bitarray(k) for k in INSTRUCTIONS.keys() if k.startswith(prefix.to01())]
