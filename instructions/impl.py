@@ -241,6 +241,7 @@ def ifjmp(state: TvmState):
 
 @insn("F26_n")
 def throwif(state: TvmState, n: int):
+    n %= 64  # unsigned
     successors = Successors()
     f = state.pop()
     throw_state = state.copy()
