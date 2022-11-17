@@ -84,3 +84,12 @@ class ConcreteSlice(tvm_valuetypes.Cell):
         new_instance.data_off = self.data_off
         new_instance.refs_off = self.refs_off
         return new_instance
+
+
+def symcell_preload_bits(cell, length):
+    # returns CellData (1023 bit BitVec)
+    return LShR(Cell.data(cell), 1023 - length)
+
+
+def symcell_preload_uint(cell, length):
+    return Int257.cast(ZeroExt(1, Extract(255, 0, symcell_preload_bits(cell, length))))

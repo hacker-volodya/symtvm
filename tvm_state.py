@@ -2,7 +2,7 @@ from typing import Union, List
 
 from z3 import BoolRef
 
-from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry
+from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry, Slice
 
 
 class TvmState:
@@ -41,7 +41,7 @@ class TvmState:
 
     @classmethod
     def send_message(cls, code: ConcreteSlice, data: Cell, body: Cell, selector: Int257):
-        return TvmState(code, [StackEntry.cell(body), StackEntry.int(selector)], regs={4: data})
+        return TvmState(code, [StackEntry.slice(Slice.slice(body)), StackEntry.int(selector)], regs={4: data})
 
     @classmethod
     def call_getmethod(cls):

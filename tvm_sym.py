@@ -9,19 +9,20 @@ def step(state: TvmState) -> Successors:
         successors.finish(state)
         return successors
     try:
-        instruction = parse_instruction(state.cc)
+        try:
+            instruction = parse_instruction(state.cc)
+        except Exception as e:
+            raise Exception(f"Insn parsing error: {e}") from e
+        try:
+            args = instruction.try_decode(state.cc)
+        except Exception as e:
+            raise Exception(f"Insn decoding error: {e}") from e
+        try:
+            return instruction.handler(state, **args)
+        except Exception as e:
+            raise Exception(f"Insn execution error: {e}") from e
     except Exception as e:
-        successors.err(state.error(f"insn parsing err: {e}", []))
-        return successors
-    try:
-        args = instruction.try_decode(state.cc)
-    except Exception as e:
-        successors.err(state.error(f"insn decoding err: {e}", []))
-        return successors
-    try:
-        return instruction.handler(state, **args)
-    except Exception as e:
-        successors.err(state.error(f"insn execution error: {e}, {e!r}", []))
+        successors.err(state.error(e, []))
         return successors
 
 

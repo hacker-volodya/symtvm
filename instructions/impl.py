@@ -3,7 +3,8 @@ from z3 import *
 
 from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
-from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Slice, Int257
+from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Slice, Int257, \
+    symcell_preload_bits, symcell_preload_uint
 from tvm_state import TvmState
 from tvm_successors import Successors
 
@@ -211,7 +212,7 @@ def ctos(state: TvmState):
 def pldu(state: TvmState, c):
     successors = Successors()
     s = Slice.cell(StackEntry.slice_val(state.pop()))
-    state.push(StackEntry.int(Int257.cast(ZeroExt(1, Extract(255, 0, LShR(Cell.data(s), 1023 - (c + 1)))))))
+    state.push(StackEntry.int(symcell_preload_uint(s, c + 1)))
     successors.ok(state)
     return successors
 
@@ -219,10 +220,14 @@ def pldu(state: TvmState, c):
 @insn("D718")
 def ldslicex(state: TvmState):
     successors = Successors()
-    l = StackEntry.int_val(state.pop())
+    l = Extract(9, 0, StackEntry.int_val(state.pop()))
     s = Slice.cell(StackEntry.slice_val(state.pop()))
-    s1 = Cell.data(s) >> (1023 - l)
-    #successors.ok(state)
+    split_at = If(Cell.data_len(s) < l, Cell.data_len(s), l)
+    s2 = StackEntry.slice(Slice.slice(Cell.cell(Cell.data(s), split_at)))
+    s1 = StackEntry.slice(Slice.slice(Cell.cell(Cell.data(s) << ZeroExt(1013, split_at), Cell.data_len(s) - split_at)))
+    state.push(s2)
+    state.push(s1)
+    successors.ok(state)
     return successors
 
 
