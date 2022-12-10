@@ -208,6 +208,17 @@ def ctos(state: TvmState):
     return successors
 
 
+@insn("D3cc")
+def ldu(state: TvmState, c):
+    successors = Successors()
+    s = Slice.cell(StackEntry.slice_val(state.pop()))
+    state.push(StackEntry.int(symcell_preload_uint(s, c + 1)))
+    s1 = StackEntry.slice(Slice.slice(Cell.cell(Cell.data(s) << (c + 1), Cell.data_len(s) - (c + 1))))
+    state.push(s1)
+    successors.ok(state)
+    return successors
+
+
 @insn("D70Bcc")
 def pldu(state: TvmState, c):
     successors = Successors()
