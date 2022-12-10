@@ -208,6 +208,16 @@ def ctos(state: TvmState):
     return successors
 
 
+@insn("D1")
+def ends(state: TvmState):
+    successors = Successors()
+    s = Slice.cell(StackEntry.slice_val(state.pop()))
+    state.constraints.append(Cell.data_len(s) == 0)
+    successors.ok(state)
+    successors.err(state.error("Slice is not empty", [Cell.data_len(s) != 0]))
+    return successors
+
+
 @insn("D3cc")
 def ldu(state: TvmState, c):
     successors = Successors()
