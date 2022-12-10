@@ -328,3 +328,20 @@ def throwif(state: TvmState, n: int):
     else:
         successors.finish(throw_state)
     return successors
+
+
+@insn("F2A_n")
+def throwifnot(state: TvmState, n: int):
+    successors = Successors()
+    f = state.pop()
+    throw_state = state.copy()
+    throw_state.constraints.append(f == StackEntry.int(0))
+    throw_state.stack = [StackEntry.int(0), StackEntry.int(n)]
+    state.constraints.append(f != StackEntry.int(0))
+    successors.ok(state)
+    if throw_state.regs.get(2) is not None:
+        throw_state.cc = throw_state.regs[2]
+        successors.ok(throw_state)
+    else:
+        successors.finish(throw_state)
+    return successors
