@@ -68,10 +68,10 @@ def dec(state: TvmState):
     return addconst(state, c=-1)
 
 
-@insn("20")
-def dup(state: TvmState):
+@insn("2i")
+def push(state: TvmState, i: int):
     successors = Successors()
-    state.push(state.s(0))
+    state.push(state.s(i))
     successors.ok(state)
     return successors
 
