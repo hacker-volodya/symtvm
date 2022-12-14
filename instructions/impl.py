@@ -4,7 +4,7 @@ from z3 import *
 from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
 from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Slice, Int257, \
-    symcell_preload_bits, symcell_preload_uint
+    symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt
 from tvm_state import TvmState
 from tvm_successors import Successors
 
@@ -344,4 +344,33 @@ def throwifnot(state: TvmState, n: int):
         successors.ok(throw_state)
     else:
         successors.finish(throw_state)
+    return successors
+
+
+@insn("F900")
+def hashcu(state: TvmState):
+    successors = Successors()
+    c = StackEntry.cell_val(state.pop())
+    state.push(CellHash(c))
+    successors.ok(state)
+    return successors
+
+
+@insn("F901")
+def hashsu(state: TvmState):
+    successors = Successors()
+    c = Slice.cell(StackEntry.slice_val(state.pop()))
+    state.push(CellHash(c))
+    successors.ok(state)
+    return successors
+
+
+@insn("F910")
+def checksignu(state: TvmState):
+    successors = Successors()
+    k = StackEntry.int_val(state.pop())
+    s = Slice.cell(StackEntry.slice_val(state.pop()))
+    h = StackEntry.int_val(state.pop())
+    state.push(CheckSignatureUInt(h, s, k))
+    successors.ok(state)
     return successors

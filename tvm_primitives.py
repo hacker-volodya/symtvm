@@ -36,6 +36,14 @@ StackEntry.declare('builder', ('builder_val', Cell))
 StackEntry.declare('continuation', ('continuation_val', Cell))
 StackEntry = StackEntry.create()
 
+# input - cell to hash
+# output - repr hash of cell
+CellHash = Function("HASHCU", Cell, Int257)
+
+# input - (1) hash, (2) signature, (3) public key
+# output - -1 if valid, 0 otherwise
+CheckSignatureUInt = Function("CHKSIGNU", Int257, Cell, Int257, Int257)
+
 
 class ConcreteSlice(tvm_valuetypes.Cell):
     def __repr__(self):
