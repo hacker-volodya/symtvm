@@ -347,6 +347,13 @@ def throwifnot(state: TvmState, n: int):
     return successors
 
 
+@insn("F800")
+def accept(state: TvmState):
+    successors = Successors()
+    successors.ok(state)
+    return successors
+
+
 @insn("F900")
 def hashcu(state: TvmState):
     successors = Successors()
