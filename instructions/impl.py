@@ -190,6 +190,25 @@ def newc(state: TvmState):
     return successors
 
 
+@insn("C9")
+def endc(state: TvmState):
+    successors = Successors()
+    state.push(StackEntry.cell(StackEntry.builder_val(state.pop())))
+    successors.ok(state)
+    return successors
+
+
+@insn("CBcc")
+def stu(state: TvmState, c: int):
+    c += 1
+    successors = Successors()
+    b = StackEntry.builder_val(state.pop())
+    x = StackEntry.int_val(state.pop())
+    state.push(StackEntry.builder(Cell.cell(Cell.data(b) | (CellData.cast(x) << (1023 - c)), Cell.data_len(b) + c)))
+    successors.ok(state)
+    return successors
+
+
 @insn("BA")
 def equal(state: TvmState):
     successors = Successors()
