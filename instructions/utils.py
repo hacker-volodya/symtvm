@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from bitarray import bitarray
 
@@ -22,16 +22,16 @@ def parse_instruction(cc: ConcreteSlice) -> TvmInstruction:
     return INSTRUCTIONS[ops_list[0].to01()]
 
 
-def disasm(cc: ConcreteSlice) -> str:
+def disasm(cc: ConcreteSlice, mark_off: Optional[int] = None) -> str:
     cc = cc.copy()
     result = []
     try:
         while len(cc.data.data) > cc.data_off:
             insn = parse_instruction(cc)
             args = insn.try_decode(cc)
-            result.append(f"{cc.data_off}: {insn.handler.__name__} {args}")
+            result.append(f"{'-> ' if cc.data_off == mark_off else ''}{cc.data_off}: {insn.handler.__name__} {args}")
     except Exception as e:
-        result.append(f"{cc.data_off}: (ERROR) {e}")
+        result.append(f"{'-> ' if cc.data_off == mark_off else ''}{cc.data_off}: (ERROR) {e}")
     return '\n'.join(result)
 
 

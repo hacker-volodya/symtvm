@@ -1,6 +1,7 @@
 from tvm_primitives import *
 from tvm_state import TvmState
 from tvm_sym import step, run
+import instructions.impl
 from instructions.utils import disasm
 import IPython
 

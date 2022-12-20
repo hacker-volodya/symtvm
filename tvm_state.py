@@ -2,6 +2,7 @@ from typing import Union, List
 
 from z3 import BoolRef
 
+from instructions.utils import disasm
 from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry, Slice
 
 
@@ -64,6 +65,11 @@ class TvmState:
 
     def error(self, exception: Union[Exception, str], constraints: List[BoolRef]):
         return TvmErrorState(self, exception, self.constraints + constraints)
+
+    def disasm(self):
+        cc = self.cc.copy()
+        cc.data_off = 0
+        return disasm(cc, self.cc.data_off)
 
     def __repr__(self):
         return f"TvmState @ {self.cc.hash().hex()[:6]}:{self.cc.data_off}"
