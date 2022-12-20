@@ -229,6 +229,13 @@ def ldu(state: TvmState, c):
     return successors
 
 
+@insn("D4")
+def ldref(state: TvmState):
+    successors = Successors()
+    successors.ok(state)
+    return successors
+
+
 @insn("D70Bcc")
 def pldu(state: TvmState, c):
     successors = Successors()
