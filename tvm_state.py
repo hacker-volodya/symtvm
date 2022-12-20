@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from z3 import BoolRef
+from z3 import BoolRef, Not
 
 from instructions.utils import disasm
 from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry, Slice
@@ -64,7 +64,10 @@ class TvmState:
         self.stack = self.stack[:-n]
 
     def error(self, exception: Union[Exception, str], constraints: List[BoolRef]):
-        return TvmErrorState(self, exception, self.constraints + constraints)
+        err = TvmErrorState(self, exception, self.constraints + constraints)
+        for constr in constraints:
+            self.constraints.append(Not(constr))
+        return err
 
     def disasm(self):
         cc = self.cc.copy()
