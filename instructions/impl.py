@@ -388,3 +388,12 @@ def checksignu(state: TvmState):
     state.push(CheckSignatureUInt(h, s, k))
     successors.ok(state)
     return successors
+
+
+@insn("FB00")
+def sendrawmsg(state: TvmState):
+    successors = Successors()
+    x = StackEntry.int_val(state.pop())
+    c = StackEntry.cell_val(state.pop())
+    successors.ok(state)
+    return successors
