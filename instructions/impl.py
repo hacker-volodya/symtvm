@@ -5,7 +5,7 @@ from instructions.insn_context import InsnContext
 from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
 from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Int257, \
-    symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt
+    symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt, symcell_skip_bits, symcell_store_bitvec
 from exceptions import *
 
 
@@ -132,7 +132,7 @@ def stu(ctx: InsnContext, c: int):
     c += 1
     b = ctx.pop_builder()
     x = ctx.pop_int()
-    ctx.push_builder(Cell.cell(Cell.data(b) | (CellData.cast(x) << (1023 - c)), Cell.data_len(b) + c))
+    ctx.push_builder(symcell_store_bitvec(b, Extract(c - 1, 0, x)))
 
 
 @insn("BA")
@@ -157,7 +157,7 @@ def ldu(ctx: InsnContext, c):
     c += 1
     s = ctx.pop_slice()
     ctx.push_int(symcell_preload_uint(s, c))
-    s1 = Cell.cell(Cell.data(s) << c, Cell.data_len(s) - c)
+    s1 = symcell_skip_bits(s, c)
     ctx.push_slice(s1)
 
 

@@ -93,3 +93,19 @@ def symcell_preload_bits(cell, length):
 
 def symcell_preload_uint(cell, length):
     return Int257.cast(ZeroExt(1, Extract(255, 0, symcell_preload_bits(cell, length))))
+
+
+def symcell_skip_bits(cell, length):
+    return Cell.cell(Cell.data(cell) << length, Cell.data_len(cell) - length)
+
+
+def symcell_store_bitvec(cell, bitvec: BitVecRef):
+    """
+    Extend Cell with specified fixed-length BitVec (more efficient than variable length store)
+    :param cell: destination
+    :param bitvec: source
+    :return: extended cell
+    """
+    length = bitvec.sort().size()
+    assert length <= 1023, f"BitVec {bitvec.sexpr()} is too long to store in cell"
+    return Cell.cell((Cell.data(cell) >> length) | (ZeroExt(1023 - length, bitvec) << (1023 - length)), Cell.data_len(cell) + length)
