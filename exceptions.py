@@ -1,6 +1,9 @@
 class VmError(RuntimeError):
     code = None
 
+    def __str__(self):
+        return f"{type(self).__name__} ({self.code})" + (f": {super().__str__()}" if super().__str__() else "")
+
 
 class StackUnderflow(VmError):
     code = 2

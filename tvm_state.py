@@ -3,7 +3,7 @@ from typing import Union, List
 from z3 import BoolRef, Not
 
 from instructions.utils import disasm
-from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry, Slice
+from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry
 
 
 class TvmState:
@@ -42,7 +42,7 @@ class TvmState:
 
     @classmethod
     def send_message(cls, code: ConcreteSlice, data: Cell, body: Cell, selector: Int257):
-        return TvmState(code, [StackEntry.slice(Slice.slice(body)), StackEntry.int(selector)], regs={4: data})
+        return TvmState(code, [StackEntry.slice(body), StackEntry.int(selector)], regs={4: data})
 
     @classmethod
     def call_getmethod(cls):
@@ -57,14 +57,14 @@ class TvmState:
     def push(self, v):
         self.stack.append(v)
 
-    def pop(self):
-        return self.stack.pop()
+    def pop(self, n=1):
+        return self.stack.pop(-n)
 
     def drop(self, n=1):
         self.stack = self.stack[:-n]
 
-    def error(self, exception: Union[Exception, str], constraints: List[BoolRef]):
-        err = TvmErrorState(self, exception, self.constraints + constraints)
+    def error(self, parent_state: "TvmState", exception: Union[Exception, str], constraints: List[BoolRef]):
+        err = TvmErrorState(parent_state, exception, self.constraints + constraints)
         for constr in constraints:
             self.constraints.append(Not(constr))
         return err
@@ -80,7 +80,7 @@ class TvmState:
 
 class TvmErrorState:
     def __init__(self, parent_state: TvmState, exception: Union[Exception, str], constraints: List[BoolRef]):
-        self.parent_state = parent_state.copy()
+        self.parent_state = parent_state
         self.exception = exception
         self.constraints = constraints
 

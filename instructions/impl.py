@@ -1,418 +1,273 @@
 import tvm_valuetypes
 from z3 import *
 
+from instructions.insn_context import InsnContext
 from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
-from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Slice, Int257, \
+from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Int257, \
     symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt
-from tvm_state import TvmState
-from tvm_successors import Successors
+from exceptions import *
 
 
 @insn("FF00")
-def setcp0(state: TvmState):
-    successors = Successors()
-    successors.ok(state)
-    return successors
+def setcp0(ctx: InsnContext):
+    pass
 
 
 @insn("A0")
-def add(state: TvmState):
-    successors = Successors()
-    a = StackEntry.int_val(state.pop())
-    b = StackEntry.int_val(state.pop())
-    is_overflow = BVAddNoOverflow(a, b, signed=True)
-    is_underflow = BVAddNoUnderflow(a, b)
-    successors.err(state.error("int overflow", [is_overflow]))
-    successors.err(state.error("int underflow", [is_underflow]))
-    state.push(StackEntry.int(a + b))
-    successors.ok(state)
-    return successors
+def add(ctx: InsnContext):
+    a = ctx.pop_int()
+    b = ctx.pop_int()
+    ctx.error(IntegerOverflow(), [Or(BVAddNoUnderflow(a, b), BVAddNoOverflow(a, b, signed=True))])
+    ctx.push_int(a + b)
 
 
 @insn("A1")
-def sub(state: TvmState):
-    successors = Successors()
-    a = StackEntry.int_val(state.pop())
-    b = StackEntry.int_val(state.pop())
-    is_overflow = BVSubNoOverflow(a, b)
-    is_underflow = BVSubNoUnderflow(a, b, signed=True)
-    successors.err(state.error("int overflow", [is_overflow]))
-    successors.err(state.error("int underflow", [is_underflow]))
-    state.push(StackEntry.int(a - b))
-    successors.ok(state)
-    return successors
+def sub(ctx: InsnContext):
+    a = ctx.pop_int()
+    b = ctx.pop_int()
+    ctx.error(IntegerOverflow(), [Or(BVSubNoOverflow(a, b), BVSubNoUnderflow(a, b, signed=True))])
+    ctx.push_int(a - b)
 
 
 @insn("A6cc", custom_decoders={"c": load_int})
-def addconst(state: TvmState, c):
-    successors = Successors()
-    a = StackEntry.int_val(state.pop())
-    b = StackEntry.int_val(StackEntry.int(c))
-    is_overflow = BVAddNoOverflow(a, b, signed=True)
-    is_underflow = BVAddNoUnderflow(a, b)
-    successors.err(state.error("int overflow", [is_overflow]))
-    successors.err(state.error("int underflow", [is_underflow]))
-    state.push(StackEntry.int(a + b))
-    successors.ok(state)
-    return successors
+def addconst(ctx: InsnContext, c):
+    a = ctx.pop_int()
+    b = Int257.cast(c)
+    ctx.error(IntegerOverflow(), [Or(BVAddNoUnderflow(a, b), BVAddNoOverflow(a, b, signed=True))])
+    ctx.push_int(a + b)
 
 
 @insn("A4")
-def inc(state: TvmState):
-    return addconst(state, c=1)
+def inc(ctx: InsnContext):
+    addconst(ctx, c=1)
 
 
 @insn("A5")
-def dec(state: TvmState):
-    return addconst(state, c=-1)
+def dec(ctx: InsnContext):
+    addconst(ctx, c=-1)
 
 
 @insn("2i")
-def push(state: TvmState, i: int):
-    successors = Successors()
-    state.push(state.s(i))
-    successors.ok(state)
-    return successors
+def push(ctx: InsnContext, i: int):
+    ctx.push(ctx.s(i))
 
 
 @insn("30")
-def drop(state: TvmState):
-    successors = Successors()
-    state.drop()
-    successors.ok(state)
-    return successors
+def drop(ctx: InsnContext):
+    ctx.drop()
 
 
 @insn("10ij")
-def xchg(state: TvmState, i, j):
-    successors = Successors()
-    state.exchange(i, j)
-    successors.ok(state)
-    return successors
+def xchg(ctx: InsnContext, i, j):
+    ctx.exchange(i, j)
 
 
 @insn("0i")
-def xchg0(state: TvmState, i):
-    return xchg(state, 0, i)
+def xchg0(ctx: InsnContext, i):
+    xchg(ctx, 0, i)
 
 
 @insn("50ij")
-def xchg2(state: TvmState, i, j):
-    successors = Successors()
-    successors.add_err(xchg(state, 1, i))
-    successors.add_err(xchg0(state, j))
-    successors.ok(state)
-    return successors
+def xchg2(ctx: InsnContext, i, j):
+    xchg(ctx, 1, i)
+    xchg0(ctx, j)
 
 
 @insn("541ijk")
-def xc2pu(state: TvmState, i, j, k):
-    successors = Successors()
-    successors.add_err(xchg2(state, i, j))
-    successors.add_err(push(state, k))
-    successors.ok(state)
-    return successors
+def xc2pu(ctx: InsnContext, i, j, k):
+    xchg2(ctx, i, j)
+    push(ctx, k)
 
 
 @insn("51ij")
-def xcpu(state: TvmState, i, j):
-    successors = Successors()
-    successors.add_err(xchg0(state, i))
-    successors.add_err(push(state, j))
-    successors.ok(state)
-    return successors
-
-
-@insn("2i")
-def push(state: TvmState, i):
-    successors = Successors()
-    state.push(state.s(i))
-    successors.ok(state)
-    return successors
+def xcpu(ctx: InsnContext, i, j):
+    xchg0(ctx, i)
+    push(ctx, j)
 
 
 @insn("31")
-def nip(state: TvmState):
-    successors = Successors()
-    state.stack.pop(-2)
-    successors.ok(state)
-    return successors
+def nip(ctx: InsnContext):
+    ctx.pop(2)
 
 
 @insn("7i")
-def push_const_smallint(state: TvmState, i):
+def push_const_smallint(ctx: InsnContext, i):
     if i > 10:
         i -= 16
-    successors = Successors()
-    state.push(i)
-    successors.ok(state)
-    return successors
+    ctx.push_int(Int257.cast(i))
 
 
 @insn("80xx", custom_decoders={"x": load_int})
 @insn("81xxxx", custom_decoders={"x": load_int})
-def push_const_int(state: TvmState, x):
-    successors = Successors()
-    state.push(StackEntry.int(x))
-    successors.ok(state)
-    return successors
-
-
 @insn("82lxxx", custom_decoders={
     "l": lambda cc, kwargs, size: load_uint(cc, None, 5),
     "x": lambda cc, kwargs, size: load_int(cc, None, 8 * kwargs["l"] + 19),
 })
-def push_const_int_wide(state: TvmState, l, x):
-    successors = Successors()
-    state.push(StackEntry.int(x))
-    successors.ok(state)
-    return successors
+def push_const_int(ctx: InsnContext, x, l=None):
+    ctx.push_int(Int257.cast(x))
 
 
 @insn("9xccc", custom_decoders={
     "c": lambda cc, kwargs, size: cc.load_bits(kwargs["x"] * 8),
 })
-def cont(state: TvmState, x, c):
-    successors = Successors()
+def cont(ctx: InsnContext, x, c):
     continuation = ConcreteSlice(tvm_valuetypes.Cell())
     continuation.data.data = c
-    state.push(continuation)
-    successors.ok(state)
-    return successors
+    ctx.push_continuation(continuation)
 
 
 @insn("C8")
-def newc(state: TvmState):
-    successors = Successors()
-    state.push(StackEntry.builder(Cell.cell(CellData.cast(0), CellDataIndex.cast(0))))
-    successors.ok(state)
-    return successors
+def newc(ctx: InsnContext):
+    ctx.push_builder(Cell.cell(CellData.cast(0), CellDataIndex.cast(0)))
 
 
 @insn("C9")
-def endc(state: TvmState):
-    successors = Successors()
-    state.push(StackEntry.cell(StackEntry.builder_val(state.pop())))
-    successors.ok(state)
-    return successors
+def endc(ctx: InsnContext):
+    ctx.push_cell(ctx.pop_builder())
 
 
 @insn("CBcc")
-def stu(state: TvmState, c: int):
+def stu(ctx: InsnContext, c: int):
     c += 1
-    successors = Successors()
-    b = StackEntry.builder_val(state.pop())
-    x = StackEntry.int_val(state.pop())
-    state.push(StackEntry.builder(Cell.cell(Cell.data(b) | (CellData.cast(x) << (1023 - c)), Cell.data_len(b) + c)))
-    successors.ok(state)
-    return successors
+    b = ctx.pop_builder()
+    x = ctx.pop_int()
+    ctx.push_builder(Cell.cell(Cell.data(b) | (CellData.cast(x) << (1023 - c)), Cell.data_len(b) + c))
 
 
 @insn("BA")
-def equal(state: TvmState):
-    successors = Successors()
-    a = state.pop()
-    b = state.pop()
-    state.push(If(a == b, StackEntry.int(-1), StackEntry.int(0)))
-    successors.ok(state)
-    return successors
+def equal(ctx: InsnContext):
+    a = ctx.pop_int()
+    b = ctx.pop_int()
+    ctx.push_int(If(a == b, Int257.cast(-1), Int257.cast(0)))
 
 
 @insn("D0")
-def ctos(state: TvmState):
-    successors = Successors()
-    state.push(StackEntry.slice(Slice.slice(StackEntry.cell_val(state.pop()))))
-    successors.ok(state)
-    return successors
+def ctos(ctx: InsnContext):
+    ctx.push_slice(ctx.pop_cell())
 
 
 @insn("D1")
-def ends(state: TvmState):
-    successors = Successors()
-    s = Slice.cell(StackEntry.slice_val(state.pop()))
-    state.constraints.append(Cell.data_len(s) == 0)
-    successors.ok(state)
-    successors.err(state.error("Slice is not empty", [Cell.data_len(s) != 0]))
-    return successors
+def ends(ctx: InsnContext):
+    ctx.error(CellUnderflow(), [Cell.data_len(ctx.pop_slice()) != 0])
 
 
 @insn("D3cc")
-def ldu(state: TvmState, c):
-    successors = Successors()
-    s = Slice.cell(StackEntry.slice_val(state.pop()))
-    state.push(StackEntry.int(symcell_preload_uint(s, c + 1)))
-    s1 = StackEntry.slice(Slice.slice(Cell.cell(Cell.data(s) << (c + 1), Cell.data_len(s) - (c + 1))))
-    state.push(s1)
-    successors.ok(state)
-    return successors
+def ldu(ctx: InsnContext, c):
+    c += 1
+    s = ctx.pop_slice()
+    ctx.push_int(symcell_preload_uint(s, c))
+    s1 = Cell.cell(Cell.data(s) << c, Cell.data_len(s) - c)
+    ctx.push_slice(s1)
 
 
 @insn("D4")
-def ldref(state: TvmState):
-    successors = Successors()
-    successors.ok(state)
-    return successors
+def ldref(ctx: InsnContext):
+    pass
 
 
 @insn("D70Bcc")
-def pldu(state: TvmState, c):
-    successors = Successors()
-    s = Slice.cell(StackEntry.slice_val(state.pop()))
-    state.push(StackEntry.int(symcell_preload_uint(s, c + 1)))
-    successors.ok(state)
-    return successors
+def pldu(ctx: InsnContext, c):
+    c += 1
+    s = ctx.pop_slice()
+    ctx.push_int(symcell_preload_uint(s, c))
 
 
 @insn("D718")
-def ldslicex(state: TvmState):
-    successors = Successors()
-    l = Extract(9, 0, StackEntry.int_val(state.pop()))
-    s = Slice.cell(StackEntry.slice_val(state.pop()))
+def ldslicex(ctx: InsnContext):
+    l = Extract(9, 0, ctx.pop_int())
+    s = ctx.pop_slice()
     split_at = If(Cell.data_len(s) < l, Cell.data_len(s), l)
-    s2 = StackEntry.slice(Slice.slice(Cell.cell(Cell.data(s), split_at)))
-    s1 = StackEntry.slice(Slice.slice(Cell.cell(Cell.data(s) << ZeroExt(1013, split_at), Cell.data_len(s) - split_at)))
-    state.push(s2)
-    state.push(s1)
-    successors.ok(state)
-    return successors
+    ctx.push_slice(Cell.cell(Cell.data(s), split_at))
+    ctx.push_slice(Cell.cell(Cell.data(s) << ZeroExt(1013, split_at), Cell.data_len(s) - split_at))
 
 
 @insn("D9")
-def jmpx(state: TvmState):
-    successors = Successors()
-    continuation = state.pop()
-    assert type(continuation) == ConcreteSlice, "Continuation must be concrete"
-    state.cc = continuation
-    successors.ok(state)
-    return successors
+def jmpx(ctx: InsnContext):
+    ctx.state.cc = ctx.pop_continuation()
 
 
 @insn("DD")
-def ifnotret(state: TvmState):
-    successors = Successors()
-    a = state.pop()
-    ret_state = state.copy()
-    ret_state.constraints.append(a == StackEntry.int(0))
-    if state.regs.get(0) is not None:
-        ret_state.cc = state.regs[0]
-        successors.ok(ret_state)
+def ifnotret(ctx: InsnContext):
+    a = ctx.pop_int()
+    ret_ctx = ctx.branch(a == Int257.cast(0))
+    if ret_ctx.state.regs.get(0) is not None:
+        ret_ctx.state.cc = ret_ctx.state.regs[0]
     else:
-        successors.finish(ret_state)
-    state.constraints.append(a != StackEntry.int(0))
-    successors.ok(state)
-    return successors
+        ret_ctx.finish()
+    ctx.join(ret_ctx)
 
 
 @insn("E0")
-def ifjmp(state: TvmState):
-    successors = Successors()
-    continuation = state.pop()
-    cond = state.pop()
-    assert type(continuation) == ConcreteSlice, "Continuation must be concrete"
-    state_jmp = state.copy()
-    state_jmp.constraints.append(cond != StackEntry.int(0))
-    state_jmp.cc = continuation
-    successors.ok(state_jmp)
-    state.constraints.append(cond == StackEntry.int(0))
-    successors.ok(state)
-    return successors
+def ifjmp(ctx: InsnContext):
+    continuation = ctx.pop_continuation()
+    cond = ctx.pop_int()
+    ctx_jmp = ctx.branch(cond != 0)
+    ctx_jmp.state.cc = continuation
+    ctx.join(ctx_jmp)
 
 
 @insn("ED4i")
-def pushctr(state: TvmState, i: int):
-    successors = Successors()
-    if state.regs.get(i) is None:
+def pushctr(ctx: InsnContext, i: int):
+    if ctx.state.regs.get(i) is None:
         reg_val = Const(f"regs_c{i}", Cell)
-        state.push(StackEntry.cell(reg_val))
-        state.regs[i] = reg_val
-    else:
-        state.push(StackEntry.cell(state.regs[i]))
-    successors.ok(state)
-    return successors
+        ctx.state.regs[i] = reg_val
+    ctx.push_cell(ctx.state.regs[i])
 
 
 @insn("ED5i")
-def popctr(state: TvmState, i: int):
-    successors = Successors()
-    state.regs[i] = StackEntry.cell_val(state.pop())
-    successors.ok(state)
+def popctr(ctx: InsnContext, i: int):
+    ctx.state.regs[i] = ctx.pop_cell()
 
 
 @insn("F26_n")
-def throwif(state: TvmState, n: int):
-    successors = Successors()
-    f = state.pop()
-    throw_state = state.copy()
-    throw_state.constraints.append(f != StackEntry.int(0))
-    throw_state.stack = [StackEntry.int(0), StackEntry.int(n)]
-    state.constraints.append(f == StackEntry.int(0))
-    successors.ok(state)
-    if throw_state.regs.get(2) is not None:
-        throw_state.cc = throw_state.regs[2]
-        successors.ok(throw_state)
+def throwif(ctx: InsnContext, n: int):
+    f = ctx.pop_int()
+    throw_ctx = ctx.branch(f != 0)
+    throw_ctx.state.stack = [StackEntry.int(0), StackEntry.int(n)]
+    if throw_ctx.state.regs.get(2) is not None:
+        throw_ctx.state.cc = throw_ctx.state.regs[2]
     else:
-        successors.finish(throw_state)
-    return successors
+        throw_ctx.finish()
+    ctx.join(throw_ctx)
 
 
 @insn("F2A_n")
-def throwifnot(state: TvmState, n: int):
-    successors = Successors()
-    f = state.pop()
-    throw_state = state.copy()
-    throw_state.constraints.append(f == StackEntry.int(0))
-    throw_state.stack = [StackEntry.int(0), StackEntry.int(n)]
-    state.constraints.append(f != StackEntry.int(0))
-    successors.ok(state)
-    if throw_state.regs.get(2) is not None:
-        throw_state.cc = throw_state.regs[2]
-        successors.ok(throw_state)
+def throwifnot(ctx: InsnContext, n: int):
+    f = ctx.pop_int()
+    throw_ctx = ctx.branch(f == 0)
+    throw_ctx.state.stack = [StackEntry.int(0), StackEntry.int(n)]
+    if throw_ctx.state.regs.get(2) is not None:
+        throw_ctx.state.cc = throw_ctx.state.regs[2]
     else:
-        successors.finish(throw_state)
-    return successors
+        throw_ctx.finish()
+    ctx.join(throw_ctx)
 
 
 @insn("F800")
-def accept(state: TvmState):
-    successors = Successors()
-    successors.ok(state)
-    return successors
+def accept(ctx: InsnContext):
+    pass
 
 
 @insn("F900")
-def hashcu(state: TvmState):
-    successors = Successors()
-    c = StackEntry.cell_val(state.pop())
-    state.push(CellHash(c))
-    successors.ok(state)
-    return successors
+def hashcu(ctx: InsnContext):
+    ctx.push_int(CellHash(ctx.pop_cell()))
 
 
 @insn("F901")
-def hashsu(state: TvmState):
-    successors = Successors()
-    c = Slice.cell(StackEntry.slice_val(state.pop()))
-    state.push(CellHash(c))
-    successors.ok(state)
-    return successors
+def hashsu(ctx: InsnContext):
+    ctx.push_int(CellHash(ctx.pop_slice()))
 
 
 @insn("F910")
-def checksignu(state: TvmState):
-    successors = Successors()
-    k = StackEntry.int_val(state.pop())
-    s = Slice.cell(StackEntry.slice_val(state.pop()))
-    h = StackEntry.int_val(state.pop())
-    state.push(CheckSignatureUInt(h, s, k))
-    successors.ok(state)
-    return successors
+def checksignu(ctx: InsnContext):
+    k = ctx.pop_int()
+    s = ctx.pop_slice()
+    h = ctx.pop_int()
+    ctx.push_int(CheckSignatureUInt(h, s, k))
 
 
 @insn("FB00")
-def sendrawmsg(state: TvmState):
-    successors = Successors()
-    x = StackEntry.int_val(state.pop())
-    c = StackEntry.cell_val(state.pop())
-    successors.ok(state)
-    return successors
+def sendrawmsg(ctx: InsnContext):
+    x = ctx.pop_int()
+    c = ctx.pop_cell()

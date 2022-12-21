@@ -1,3 +1,4 @@
+from instructions.insn_context import InsnContext
 from instructions.utils import parse_instruction
 from tvm_state import TvmState
 from tvm_successors import Successors
@@ -18,11 +19,13 @@ def step(state: TvmState) -> Successors:
         except Exception as e:
             raise Exception(f"Insn decoding error: {e}") from e
         try:
-            return instruction.handler(state, **args)
+            context = InsnContext(state)
+            instruction.handler(context, **args)
+            return context.finalize()
         except Exception as e:
             raise Exception(f"Insn execution error: {e}") from e
     except Exception as e:
-        successors.err(state.error(e, []))
+        successors.err(state.error(state.copy(), e, []))
         return successors
 
 
