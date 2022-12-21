@@ -69,10 +69,14 @@ class TvmState:
             self.constraints.append(Not(constr))
         return err
 
-    def disasm(self):
+    def disasm(self, need_print=True):
         cc = self.cc.copy()
         cc.data_off = 0
-        return disasm(cc, self.cc.data_off)
+        d = disasm(cc, self.cc.data_off)
+        if need_print:
+            print(d)
+        else:
+            return d
 
     def __repr__(self):
         return f"TvmState @ {self.cc.hash().hex()[:6]}:{self.cc.data_off}"
