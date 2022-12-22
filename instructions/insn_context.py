@@ -1,6 +1,6 @@
 from typing import List
 
-from z3 import Not, Int, BoolRef
+from z3 import Not, Int, BoolRef, unsat
 
 from exceptions import TypeCheckError, StackUnderflow, VmError
 from tvm_primitives import StackEntry, ConcreteSlice
@@ -78,8 +78,8 @@ class InsnContext:
 
     def branch(self, condition):
         taken_state = self.state.copy()
-        taken_state.constraints.append(condition)
-        self.state.constraints.append(Not(condition))
+        taken_state.add_constraints(condition)
+        self.state.add_constraints(Not(condition))
         return InsnContext(self.state.copy(), self.parent_state)
 
     def join(self, branched_context: "InsnContext"):
@@ -89,7 +89,9 @@ class InsnContext:
         self.finished = True
 
     def finalize(self):
-        if not self.finished:
+        if self.state.solver.check() == unsat:
+            self.successors.add_unsat(self.state)
+        elif not self.finished:
             self.successors.ok(self.state)
         else:
             self.successors.finish(self.state)

@@ -1,14 +1,14 @@
 from typing import Union, List
 
-from z3 import BoolRef, Not
+from z3 import BoolRef, Not, Solver
 
 from instructions.utils import disasm
 from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry
 
 
 class TvmState:
-    def __init__(self, cc: ConcreteSlice, stack=None, actions=None, regs=None, constraints=None, gl=0, gc=0, gr=0,
-                 gm=0):
+    def __init__(self, cc: ConcreteSlice, stack=None, actions=None, regs=None, gl=0, gc=0, gr=0,
+                 gm=0, solver=None):
         if actions is None:
             actions = []
         if stack is None:
@@ -17,9 +17,8 @@ class TvmState:
             regs = {
                 # default regs value
             }
-        if constraints is None:
-            constraints = []
-        self.constraints = constraints
+        if solver is None:
+            solver = Solver()
         self.actions = actions
         self.stack = stack
         self.cc = cc
@@ -28,17 +27,20 @@ class TvmState:
         self.gc = gc
         self.gr = gr
         self.gm = gm
+        self.solver = solver
 
     def copy(self):
+        s = Solver()
+        s.assert_exprs(self.solver.assertions())
         return TvmState(self.cc.copy(),
                         self.stack.copy(),
                         self.actions.copy(),
                         self.regs.copy(),
-                        self.constraints.copy(),
                         self.gl,
                         self.gc,
                         self.gr,
-                        self.gm)
+                        self.gm,
+                        s)
 
     @classmethod
     def send_message(cls, code: ConcreteSlice, data: Cell, body: Cell, selector: Int257):
@@ -64,9 +66,12 @@ class TvmState:
         self.stack = self.stack[:-n]
 
     def error(self, parent_state: "TvmState", exception: Union[Exception, str], constraints: List[BoolRef]):
-        err = TvmErrorState(parent_state, exception, self.constraints + constraints)
+        s = Solver()
+        s.assert_exprs(self.solver.assertions())
+        s.add(constraints)
+        err = TvmErrorState(parent_state, exception, s)
         for constr in constraints:
-            self.constraints.append(Not(constr))
+            self.add_constraints(Not(constr))
         return err
 
     def disasm(self, need_print=True):
@@ -78,15 +83,18 @@ class TvmState:
         else:
             return d
 
+    def add_constraints(self, exprs):
+        self.solver.add(exprs)
+
     def __repr__(self):
         return f"TvmState @ {self.cc.hash().hex()[:6]}:{self.cc.data_off}"
 
 
 class TvmErrorState:
-    def __init__(self, parent_state: TvmState, exception: Union[Exception, str], constraints: List[BoolRef]):
+    def __init__(self, parent_state: TvmState, exception: Union[Exception, str], solver: Solver):
         self.parent_state = parent_state
         self.exception = exception
-        self.constraints = constraints
+        self.solver = solver
 
     def __repr__(self):
         return f"TvmErrorState <{self.parent_state!r}>: {self.exception}"

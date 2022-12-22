@@ -18,7 +18,7 @@ def setcp0(ctx: InsnContext):
 def add(ctx: InsnContext):
     a = ctx.pop_int()
     b = ctx.pop_int()
-    ctx.error(IntegerOverflow(), [Or(BVAddNoUnderflow(a, b), BVAddNoOverflow(a, b, signed=True))])
+    ctx.error(IntegerOverflow(), [Or(Not(BVAddNoUnderflow(a, b)), Not(BVAddNoOverflow(a, b, signed=True)))])
     ctx.push_int(a + b)
 
 
@@ -26,7 +26,7 @@ def add(ctx: InsnContext):
 def sub(ctx: InsnContext):
     a = ctx.pop_int()
     b = ctx.pop_int()
-    ctx.error(IntegerOverflow(), [Or(BVSubNoOverflow(a, b), BVSubNoUnderflow(a, b, signed=True))])
+    ctx.error(IntegerOverflow(), [Or(Not(BVSubNoOverflow(a, b)), Not(BVSubNoUnderflow(a, b, signed=True)))])
     ctx.push_int(a - b)
 
 
@@ -34,7 +34,7 @@ def sub(ctx: InsnContext):
 def addconst(ctx: InsnContext, c):
     a = ctx.pop_int()
     b = Int257.cast(c)
-    ctx.error(IntegerOverflow(), [Or(BVAddNoUnderflow(a, b), BVAddNoOverflow(a, b, signed=True))])
+    ctx.error(IntegerOverflow(), [Or(Not(BVAddNoUnderflow(a, b)), Not(BVAddNoOverflow(a, b, signed=True)))])
     ctx.push_int(a + b)
 
 

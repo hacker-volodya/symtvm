@@ -36,6 +36,6 @@ def run(state: TvmState) -> Successors:
         s = queue.pop()
         succ = step(s)
         queue += succ.succeed
-        successors.finished += succ.finished
-        successors.add_err(succ)
+        successors.add_all(succ)
+    successors.succeed = []
     return successors
