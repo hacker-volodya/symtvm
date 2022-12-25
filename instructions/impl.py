@@ -133,6 +133,7 @@ def stu(ctx: InsnContext, c: int):
     c += 1
     b = ctx.pop_builder()
     x = ctx.pop_int()
+    ctx.error(CellOverflow(), [UGT(Cell.data_len(b) + c, 1023)])
     ctx.push_builder(symcell_store_bitvec(b, Extract(c - 1, 0, x)))
 
 
