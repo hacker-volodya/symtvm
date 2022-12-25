@@ -108,5 +108,8 @@ class TvmErrorState:
     def simple_assertions(self):
         return [s for s in [simplify(s) for s in self.solver.assertions()] if not s.eq(BoolVal(True))]
 
+    def addr(self):
+        return self.parent_state.addr()
+
     def __repr__(self):
         return f"TvmErrorState <{self.parent_state!r}>: {self.exception}"
