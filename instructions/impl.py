@@ -181,9 +181,12 @@ def pldu(ctx: InsnContext, c):
 
 @insn("D718")
 def ldslicex(ctx: InsnContext):
-    l = Extract(9, 0, ctx.pop_int())
+    split_at = ctx.pop_int()
     s = ctx.pop_slice()
-    split_at = If(Cell.data_len(s) < l, Cell.data_len(s), l)
+    data_len = Cell.data_len(s)
+    ctx.error(OutOfRange(), [UGT(split_at, 1023)])
+    split_at = Extract(9, 0, split_at)
+    ctx.error(CellUnderflow(), [ULT(data_len, split_at)])
     ctx.push_slice(Cell.cell(Cell.data(s), split_at, RefList.ref0))
     ctx.push_slice(Cell.cell(Cell.data(s) << ZeroExt(1013, split_at), Cell.data_len(s) - split_at, Cell.refs(s)))
 
