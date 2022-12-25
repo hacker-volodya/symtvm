@@ -133,7 +133,7 @@ def stu(ctx: InsnContext, c: int):
     c += 1
     b = ctx.pop_builder()
     x = ctx.pop_int()
-    ctx.error(CellOverflow(), [UGT(Cell.data_len(b) + c, 1023)])
+    ctx.error(CellOverflow(), [UGT(Cell.data_len(b), 1023 - c)])
     ctx.push_builder(symcell_store_bitvec(b, Extract(c - 1, 0, x)))
 
 
@@ -159,7 +159,7 @@ def ends(ctx: InsnContext):
 def ldu(ctx: InsnContext, c):
     c += 1
     s = ctx.pop_slice()
-    ctx.error(CellUnderflow(), [Cell.data_len(s) < c])
+    ctx.error(CellUnderflow(), [ULT(Cell.data_len(s), c)])
     ctx.push_int(symcell_preload_uint(s, c))
     s1 = symcell_skip_bits(s, c)
     ctx.push_slice(s1)
@@ -178,7 +178,7 @@ def ldref(ctx: InsnContext):
 def pldu(ctx: InsnContext, c):
     c += 1
     s = ctx.pop_slice()
-    ctx.error(CellUnderflow(), [Cell.data_len(s) < c])
+    ctx.error(CellUnderflow(), [ULT(Cell.data_len(s), c)])
     ctx.push_int(symcell_preload_uint(s, c))
 
 
