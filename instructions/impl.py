@@ -151,13 +151,15 @@ def ctos(ctx: InsnContext):
 
 @insn("D1")
 def ends(ctx: InsnContext):
-    ctx.error(CellUnderflow(), [Cell.data_len(ctx.pop_slice()) != 0])
+    s = ctx.pop_slice()
+    ctx.error(CellUnderflow(), [Or(Cell.data_len(s) != 0, Not(RefList.is_ref0(Cell.refs(s))))])
 
 
 @insn("D3cc")
 def ldu(ctx: InsnContext, c):
     c += 1
     s = ctx.pop_slice()
+    ctx.error(CellUnderflow(), [Cell.data_len(s) < c])
     ctx.push_int(symcell_preload_uint(s, c))
     s1 = symcell_skip_bits(s, c)
     ctx.push_slice(s1)
@@ -176,6 +178,7 @@ def ldref(ctx: InsnContext):
 def pldu(ctx: InsnContext, c):
     c += 1
     s = ctx.pop_slice()
+    ctx.error(CellUnderflow(), [Cell.data_len(s) < c])
     ctx.push_int(symcell_preload_uint(s, c))
 
 
