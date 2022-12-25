@@ -6,7 +6,7 @@ from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
 from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Int257, \
     symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt, symcell_skip_bits, symcell_store_bitvec, \
-    RefList
+    RefList, symcell_empty
 from exceptions import *
 
 
@@ -120,7 +120,7 @@ def cont(ctx: InsnContext, x, c):
 
 @insn("C8")
 def newc(ctx: InsnContext):
-    ctx.push_builder(Cell.cell(CellData.cast(0), CellDataIndex.cast(0)))
+    ctx.push_builder(symcell_empty())
 
 
 @insn("C9")
@@ -164,7 +164,11 @@ def ldu(ctx: InsnContext, c):
 
 @insn("D4")
 def ldref(ctx: InsnContext):
-    pass
+    s = ctx.pop_slice()
+    refs = Cell.refs(s)
+    ctx.error(CellUnderflow(), [RefList.is_ref0(refs)])
+    ctx.push_cell(RefList.cell1(refs))
+    ctx.push_slice(Cell.cell(Cell.data(s), Cell.data_len(s), RefList.ref0))
 
 
 @insn("D70Bcc")
@@ -272,3 +276,6 @@ def checksignu(ctx: InsnContext):
 def sendrawmsg(ctx: InsnContext):
     x = ctx.pop_int()
     c = ctx.pop_cell()
+    actions = ctx.state.regs.get(5, [])
+    actions.append((c, x))
+    ctx.state.regs[5] = actions
