@@ -5,7 +5,8 @@ from instructions.insn_context import InsnContext
 from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
 from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Int257, \
-    symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt, symcell_skip_bits, symcell_store_bitvec
+    symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt, symcell_skip_bits, symcell_store_bitvec, \
+    RefList
 from exceptions import *
 
 
@@ -178,8 +179,8 @@ def ldslicex(ctx: InsnContext):
     l = Extract(9, 0, ctx.pop_int())
     s = ctx.pop_slice()
     split_at = If(Cell.data_len(s) < l, Cell.data_len(s), l)
-    ctx.push_slice(Cell.cell(Cell.data(s), split_at))
-    ctx.push_slice(Cell.cell(Cell.data(s) << ZeroExt(1013, split_at), Cell.data_len(s) - split_at))
+    ctx.push_slice(Cell.cell(Cell.data(s), split_at, RefList.ref0))
+    ctx.push_slice(Cell.cell(Cell.data(s) << ZeroExt(1013, split_at), Cell.data_len(s) - split_at, Cell.refs(s)))
 
 
 @insn("D9")

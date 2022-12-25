@@ -15,8 +15,11 @@ CellData = BitVecSort(1023)
 CellRefIndex = BitVecSort(2)
 
 Cell = Datatype('Cell')
-Cell.declare('cell', ('data', CellData), ('data_len', CellDataIndex))
-Cell = Cell.create()
+RefList = Datatype('RefList')
+RefList.declare('ref0')
+RefList.declare('ref1', ('cell1', Cell))
+Cell.declare('cell', ('data', CellData), ('data_len', CellDataIndex), ('refs', RefList))
+Cell, RefList = CreateDatatypes(Cell, RefList)
 
 StackEntry = Datatype('StackEntry')
 StackEntry.declare('int', ('int_val', Int257))
@@ -86,6 +89,10 @@ class ConcreteSlice(tvm_valuetypes.Cell):
         return new_instance
 
 
+def symcell_empty():
+    return Cell.cell(CellData.cast(0), CellDataIndex.cast(0), RefList.ref0)
+
+
 def symcell_preload_bits(cell, length):
     # returns CellData (1023 bit BitVec)
     return LShR(Cell.data(cell), 1023 - length)
@@ -96,7 +103,7 @@ def symcell_preload_uint(cell, length):
 
 
 def symcell_skip_bits(cell, length):
-    return Cell.cell(Cell.data(cell) << length, Cell.data_len(cell) - length)
+    return Cell.cell(Cell.data(cell) << length, Cell.data_len(cell) - length, Cell.refs(cell))
 
 
 def symcell_store_bitvec(cell, bitvec: BitVecRef):
@@ -108,4 +115,8 @@ def symcell_store_bitvec(cell, bitvec: BitVecRef):
     """
     length = bitvec.sort().size()
     assert length <= 1023, f"BitVec {bitvec.sexpr()} is too long to store in cell"
-    return Cell.cell((Cell.data(cell) >> length) | (ZeroExt(1023 - length, bitvec) << (1023 - length)), Cell.data_len(cell) + length)
+    return Cell.cell(
+        (Cell.data(cell) >> length) | (ZeroExt(1023 - length, bitvec) << (1023 - length)),
+        Cell.data_len(cell) + length,
+        Cell.refs(cell)
+    )
