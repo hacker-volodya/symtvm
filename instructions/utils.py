@@ -28,8 +28,10 @@ def disasm(cc: ConcreteSlice, mark_off: Optional[int] = None) -> str:
     try:
         while len(cc.data.data) > cc.data_off:
             insn = parse_instruction(cc)
-            args = insn.try_decode(cc)
+            next_cc = cc.copy()
+            args = insn.try_decode(next_cc)
             result.append(f"{'-> ' if cc.data_off == mark_off else ''}{cc.data_off}: {insn.handler.__name__} {args}")
+            cc = next_cc
     except Exception as e:
         result.append(f"{'-> ' if cc.data_off == mark_off else ''}{cc.data_off}: (ERROR) {e}")
     return '\n'.join(result)
