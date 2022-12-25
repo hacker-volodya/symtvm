@@ -41,7 +41,7 @@ class InsnContext:
         return expr
 
     def stackunderflowcheck(self, n):
-        self.error(StackUnderflow(), [Int(n) > Int(len(self.state.stack))])
+        self.error(StackUnderflow(), [n > len(self.state.stack)])
 
     def pop(self, n=1):
         self.stackunderflowcheck(n)
