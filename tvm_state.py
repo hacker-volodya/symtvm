@@ -92,8 +92,11 @@ class TvmState:
     def simple_stack(self):
         return [simplify(s) for s in self.stack]
 
+    def addr(self):
+        return f"{self.cc.hash().hex()[:6]}:{self.cc.data_off}"
+
     def __repr__(self):
-        return f"TvmState @ {self.cc.hash().hex()[:6]}:{self.cc.data_off}"
+        return f"TvmState @ {self.addr()}"
 
 
 class TvmErrorState:
