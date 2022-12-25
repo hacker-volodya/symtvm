@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from z3 import BoolRef, Not, Solver, simplify
+from z3 import BoolRef, Not, Solver, simplify, BoolVal
 
 from instructions.utils import disasm
 from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry
@@ -87,7 +87,7 @@ class TvmState:
         self.solver.add(exprs)
 
     def simple_assertions(self):
-        return [simplify(s) for s in self.solver.assertions()]
+        return [s for s in [simplify(s) for s in self.solver.assertions()] if not s.eq(BoolVal(True))]
 
     def simple_stack(self):
         return [simplify(s) for s in self.stack]
@@ -101,6 +101,9 @@ class TvmErrorState:
         self.parent_state = parent_state
         self.exception = exception
         self.solver = solver
+
+    def simple_assertions(self):
+        return [s for s in [simplify(s) for s in self.solver.assertions()] if not s.eq(BoolVal(True))]
 
     def __repr__(self):
         return f"TvmErrorState <{self.parent_state!r}>: {self.exception}"
