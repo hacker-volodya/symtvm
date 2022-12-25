@@ -1,6 +1,8 @@
+from itertools import chain, cycle
+
 from instructions.insn_context import InsnContext
 from instructions.utils import parse_instruction
-from tvm_state import TvmState
+from tvm_state import TvmState, TvmErrorState
 from tvm_successors import Successors
 
 
@@ -29,11 +31,21 @@ def step(state: TvmState) -> Successors:
         return successors
 
 
-def run(state: TvmState, stop_cond=lambda succ: len(succ.succeed) == 0) -> Successors:
+def run(state: TvmState, stop_cond=lambda succ: len(succ.succeed) == 0):
     successors = Successors()
     successors.succeed = [state]
+    graph = []
     while not stop_cond(successors):
         s = successors.succeed.pop(0)
+        from_state = s.copy()
         succ = step(s)
+        for next_state, symbol in chain(
+                zip(succ.succeed, cycle('s')),
+                zip(succ.finished, chain('f')),
+                zip(succ.errored, chain('e')),
+                zip(succ.errored_unsat, chain(['eu'])),
+                zip(succ.unsat, chain('u'))
+        ):
+            graph.append((from_state, next_state.copy() if type(next_state) != TvmErrorState else next_state, symbol))
         successors.add_all(succ)
-    return successors
+    return successors, graph
