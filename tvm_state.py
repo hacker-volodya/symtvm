@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from z3 import BoolRef, Not, Solver
+from z3 import BoolRef, Not, Solver, simplify
 
 from instructions.utils import disasm
 from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry
@@ -85,6 +85,12 @@ class TvmState:
 
     def add_constraints(self, exprs):
         self.solver.add(exprs)
+
+    def simple_assertions(self):
+        return [simplify(s) for s in self.solver.assertions()]
+
+    def simple_stack(self):
+        return [simplify(s) for s in self.stack]
 
     def __repr__(self):
         return f"TvmState @ {self.cc.hash().hex()[:6]}:{self.cc.data_off}"
