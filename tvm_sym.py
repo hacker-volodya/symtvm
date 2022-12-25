@@ -29,13 +29,11 @@ def step(state: TvmState) -> Successors:
         return successors
 
 
-def run(state: TvmState) -> Successors:
-    queue = [state]
+def run(state: TvmState, stop_cond=lambda succ: len(succ.succeed) == 0) -> Successors:
     successors = Successors()
-    while len(queue) > 0:
-        s = queue.pop()
+    successors.succeed = [state]
+    while not stop_cond(successors):
+        s = successors.succeed.pop(0)
         succ = step(s)
-        queue += succ.succeed
         successors.add_all(succ)
-    successors.succeed = []
     return successors
