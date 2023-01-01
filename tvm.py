@@ -1,3 +1,4 @@
+from symcell import SymCell
 from tvm_primitives import *
 from tvm_state import TvmState
 from tvm_sym import step, run
@@ -9,8 +10,9 @@ import IPython
 
 def test_tvm():
     cc = ConcreteSlice(tvm_valuetypes.deserialize_boc(open("simple-wallet.boc", "rb").read()))
-    data = CellData.cast(Concat(BitVec('seqno', 32), BitVec('pubkey', 256), BitVec('empty', 1023 - 32 - 256)))
-    c4 = Cell.cell(data, CellDataIndex.cast(32 + 256), Cell.refs(symcell_empty()))
+    c4 = SymCell.empty()
+    c4.store_bits(BitVec('seqno', 32), 32)
+    c4.store_bits(BitVec('pubkey', 256), 256)
     initial_state = TvmState.send_message(cc, c4, Const('body', Cell), Int257.cast(-1))
     succ, graph = run(initial_state)
     IPython.embed()

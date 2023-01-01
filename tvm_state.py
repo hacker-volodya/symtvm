@@ -3,6 +3,7 @@ from typing import Union, List
 from z3 import BoolRef, Not, Solver, simplify, BoolVal
 
 from instructions.utils import disasm
+from symcell import SymCell
 from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry
 
 
@@ -43,7 +44,7 @@ class TvmState:
                         s)
 
     @classmethod
-    def send_message(cls, code: ConcreteSlice, data: Cell, body: Cell, selector: Int257):
+    def send_message(cls, code: ConcreteSlice, data: SymCell, body: Cell, selector: Int257):
         return TvmState(code, [StackEntry.slice(body), StackEntry.int(selector)], regs={4: data})
 
     @classmethod

@@ -4,9 +4,7 @@ from z3 import *
 from instructions.insn_context import InsnContext
 from instructions.operand_parsers import load_uint, load_int
 from instructions.registry import insn
-from tvm_primitives import StackEntry, Cell, CellData, CellDataIndex, ConcreteSlice, Int257, \
-    symcell_preload_bits, symcell_preload_uint, CellHash, CheckSignatureUInt, symcell_skip_bits, symcell_store_bitvec, \
-    RefList, symcell_empty
+from tvm_primitives import StackEntry, Cell, ConcreteSlice, Int257, CheckSignatureUInt, CellData
 from exceptions import *
 
 
@@ -120,7 +118,7 @@ def cont(ctx: InsnContext, x, c):
 
 @insn("C8")
 def newc(ctx: InsnContext):
-    ctx.push_builder(symcell_empty())
+    ctx.push_builder(ctx.empty_cell())
 
 
 @insn("C9")
@@ -133,9 +131,8 @@ def stu(ctx: InsnContext, c: int):
     c += 1
     b = ctx.pop_builder()
     x = ctx.pop_int()
-    ctx.error(CellOverflow(), [UGT(Cell.data_len(b), 1023 - c)])
-    ctx.error(OutOfRange(), [x >> c != 0])
-    ctx.push_builder(symcell_store_bitvec(b, Extract(c - 1, 0, x)))
+    b.store_int(x, c, signed=False)
+    ctx.push_builder(b)
 
 
 @insn("BA")
@@ -153,46 +150,41 @@ def ctos(ctx: InsnContext):
 @insn("D1")
 def ends(ctx: InsnContext):
     s = ctx.pop_slice()
-    ctx.error(CellUnderflow(), [Or(Cell.data_len(s) != 0, Not(RefList.is_ref0(Cell.refs(s))))])
+    ctx.error(CellUnderflow(), [Or(s.data_size() != 0, s.ref_size() != 0)])
 
 
 @insn("D3cc")
 def ldu(ctx: InsnContext, c):
     c += 1
     s = ctx.pop_slice()
-    ctx.error(CellUnderflow(), [ULT(Cell.data_len(s), c)])
-    ctx.push_int(symcell_preload_uint(s, c))
-    s1 = symcell_skip_bits(s, c)
-    ctx.push_slice(s1)
+    ctx.push_int(s.load_int(c, signed=False))
+    ctx.push_slice(s)
 
 
 @insn("D4")
 def ldref(ctx: InsnContext):
     s = ctx.pop_slice()
-    refs = Cell.refs(s)
-    ctx.error(CellUnderflow(), [RefList.is_ref0(refs)])
-    ctx.push_cell(RefList.cell1(refs))
-    ctx.push_slice(Cell.cell(Cell.data(s), Cell.data_len(s), RefList.ref0))
+    ctx.push_cell(s.load_ref())
+    ctx.push_slice(s)
 
 
 @insn("D70Bcc")
 def pldu(ctx: InsnContext, c):
     c += 1
     s = ctx.pop_slice()
-    ctx.error(CellUnderflow(), [ULT(Cell.data_len(s), c)])
-    ctx.push_int(symcell_preload_uint(s, c))
+    ctx.push_int(s.preload_int(c, signed=False))
 
 
 @insn("D718")
 def ldslicex(ctx: InsnContext):
     split_at = ctx.pop_int()
     s = ctx.pop_slice()
-    data_len = Cell.data_len(s)
-    ctx.error(OutOfRange(), [UGT(split_at, 1023)])
-    split_at = Extract(9, 0, split_at)
-    ctx.error(CellUnderflow(), [ULT(data_len, split_at)])
-    ctx.push_slice(Cell.cell(Cell.data(s), split_at, RefList.ref0))
-    ctx.push_slice(Cell.cell(Cell.data(s) << ZeroExt(1013, split_at), Cell.data_len(s) - split_at, Cell.refs(s)))
+    ctx.error(OutOfRange(), [UGT(split_at, CellData.size())])
+    bits = s.load_bits(split_at)
+    s2 = ctx.empty_cell()
+    s2.store_bits(bits, split_at, check_overflow=False)
+    ctx.push_slice(s2)
+    ctx.push_slice(s)
 
 
 @insn("D9")
@@ -264,12 +256,12 @@ def accept(ctx: InsnContext):
 
 @insn("F900")
 def hashcu(ctx: InsnContext):
-    ctx.push_int(CellHash(ctx.pop_cell()))
+    ctx.push_int(ctx.pop_cell().reprhash())
 
 
 @insn("F901")
 def hashsu(ctx: InsnContext):
-    ctx.push_int(CellHash(ctx.pop_slice()))
+    ctx.push_int(ctx.pop_slice().reprhash())
 
 
 @insn("F910")
@@ -277,7 +269,7 @@ def checksignu(ctx: InsnContext):
     k = ctx.pop_int()
     s = ctx.pop_slice()
     h = ctx.pop_int()
-    ctx.push_int(CheckSignatureUInt(h, s, k))
+    ctx.push_int(CheckSignatureUInt(h, s.cell, k))
 
 
 @insn("FB00")

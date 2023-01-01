@@ -1,11 +1,12 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from bitarray import bitarray
+from z3 import BitVecRef, BitVecSortRef, Extract, ZeroExt
 
 from instructions.bit_utils import ba2hex
 from instructions.instruction import TvmInstruction
 from instructions.registry import INSTRUCTIONS
-from tvm_primitives import ConcreteSlice
+from tvm_primitives import ConcreteSlice, CellData
 
 
 def parse_instruction(cc: ConcreteSlice) -> TvmInstruction:
@@ -39,3 +40,20 @@ def disasm(cc: ConcreteSlice, mark_off: Optional[int] = None) -> str:
 
 def match_insn_prefix(prefix: bitarray) -> List[bitarray]:
     return [bitarray(k) for k in INSTRUCTIONS.keys() if k.startswith(prefix.to01())]
+
+
+def cell_signext(x: BitVecRef, numbits) -> BitVecRef:
+    assert x.size() == CellData.size(), "Input must be CellData"
+    shift = CellData.size() - numbits
+    return x << shift >> shift
+
+
+def recast_bitvec(source: Union[BitVecRef, int], target: BitVecSortRef) -> BitVecRef:
+    if type(source) is int:
+        return target.cast(source)
+    if target.size() < source.size():
+        return Extract(target.size() - 1, 0, source)
+    elif target.size() > source.size():
+        return ZeroExt(target.size() - source.size(), source)
+    else:
+        return source
