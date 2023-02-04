@@ -29,7 +29,7 @@ class TypeCheckError(VmError):
     code = 7
 
     def __init__(self, expected, got):
-        super(TypeCheckError, self).__init__(f"Expected {expected}, got {got}")
+        super(TypeCheckError, self).__init__(f"Expected {expected}, got {got.decl()}")
         self.expected = expected
         self.got = got
 
