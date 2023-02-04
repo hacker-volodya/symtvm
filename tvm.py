@@ -2,7 +2,7 @@ from symcell import SymCell
 from tvm_primitives import *
 from tvm_state import TvmState
 from tvm_sym import step, run
-import instructions.impl
+import instructions.cp0
 from instructions.utils import disasm
 from cfg import build_graph
 import IPython
