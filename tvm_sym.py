@@ -41,10 +41,10 @@ def run(state: TvmState, stop_cond=lambda succ: len(succ.succeed) == 0):
         succ = step(s)
         for next_state, symbol in chain(
                 zip(succ.succeed, cycle('s')),
-                zip(succ.finished, chain('f')),
-                zip(succ.errored, chain('e')),
-                zip(succ.errored_unsat, chain(['eu'])),
-                zip(succ.unsat, chain('u'))
+                zip(succ.finished, cycle('f')),
+                zip(succ.errored, cycle('e')),
+                zip(succ.errored_unsat, cycle(['eu'])),
+                zip(succ.unsat, cycle('u'))
         ):
             graph.append((from_state, next_state.copy() if type(next_state) != TvmErrorState else next_state, symbol))
         successors.add_all(succ)
