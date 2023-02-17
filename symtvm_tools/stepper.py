@@ -1,9 +1,10 @@
 from itertools import chain, cycle
 
-from instructions.insn_context import InsnContext
-from instructions.utils import parse_instruction
-from tvm_state import TvmState, TvmErrorState
-from tvm_successors import Successors
+from symtvm.decoder.utils import parse_instruction
+from symtvm.state.sym_state import TvmState
+from symtvm.state.sym_state import TvmErrorState
+from symtvm.transition.context import InsnContext
+from symtvm.transition.successors import Successors
 
 
 def step(state: TvmState) -> Successors:

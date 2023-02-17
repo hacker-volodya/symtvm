@@ -1,12 +1,13 @@
 from typing import List
 
-from z3 import Not, Int, BoolRef, unsat
+from z3 import Not, BoolRef, unsat
 
-from exceptions import TypeCheckError, StackUnderflow, VmError
-from symcell import SymCell
-from tvm_primitives import StackEntry, ConcreteSlice
-from tvm_state import TvmState
-from tvm_successors import Successors
+from symtvm.state.concreteslice import ConcreteSlice
+from symtvm.state.exit_codes import VmError, TypeCheckError, StackUnderflow
+from symtvm.state.sym_state import TvmState
+from symtvm.state.symcell import SymCell
+from symtvm.state.types import StackEntry
+from symtvm.transition.successors import Successors
 
 
 class InsnContext:

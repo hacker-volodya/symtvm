@@ -1,11 +1,13 @@
 import tvm_valuetypes
 from z3 import *
 
-from instructions.insn_context import InsnContext
-from instructions.operand_parsers import load_uint, load_int
-from instructions.registry import insn
-from tvm_primitives import StackEntry, Cell, ConcreteSlice, Int257, CheckSignatureUInt, CellData
-from exceptions import *
+from symtvm.decoder.operand_parsers import load_uint, load_int
+from symtvm.state.types import Int257, Cell, StackEntry
+from symtvm.state.concreteslice import ConcreteSlice
+from symtvm.state.exit_codes import *
+from symtvm.state.types import CheckSignatureUInt, CellData
+from symtvm.transition.context import InsnContext
+from symtvm.transition.registry import insn
 
 
 @insn("FF00")

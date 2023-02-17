@@ -1,6 +1,7 @@
 from z3 import unsat
 
-from tvm_state import TvmState, TvmErrorState
+from symtvm.state.sym_state import TvmState
+from symtvm.state.sym_state import TvmErrorState
 
 
 class Successors:

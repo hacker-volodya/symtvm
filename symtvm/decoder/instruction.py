@@ -1,10 +1,8 @@
 import string
 
-from bitarray.util import ba2int
-
-from instructions.bit_utils import hex2ba
-from instructions.operand_parsers import load_uint
-from tvm_primitives import ConcreteSlice
+from symtvm.decoder.bit_utils import hex2ba
+from symtvm.decoder.operand_parsers import load_uint
+from symtvm.state.concreteslice import ConcreteSlice
 
 
 class TvmInstruction:

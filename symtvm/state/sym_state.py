@@ -1,10 +1,11 @@
 from typing import Union, List
 
-from z3 import BoolRef, Not, Solver, simplify, BoolVal
+from z3 import Solver, BoolRef, Not, simplify, BoolVal
 
-from instructions.utils import disasm
-from symcell import SymCell
-from tvm_primitives import ConcreteSlice, Cell, Int257, StackEntry
+from symtvm.decoder.utils import disasm
+from symtvm.state.concreteslice import ConcreteSlice
+from symtvm.state.symcell import SymCell
+from symtvm.state.types import StackEntry, Cell, Int257
 
 
 class TvmState:

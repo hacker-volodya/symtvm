@@ -3,10 +3,11 @@ from typing import List, Optional, Union
 from bitarray import bitarray
 from z3 import BitVecRef, BitVecSortRef, Extract, ZeroExt
 
-from instructions.bit_utils import ba2hex
-from instructions.instruction import TvmInstruction
-from instructions.registry import INSTRUCTIONS
-from tvm_primitives import ConcreteSlice, CellData
+from symtvm.decoder.bit_utils import ba2hex
+from symtvm.decoder.instruction import TvmInstruction
+from symtvm.state.concreteslice import ConcreteSlice
+from symtvm.state.types import CellData
+from symtvm.transition.registry import INSTRUCTIONS
 
 
 def parse_instruction(cc: ConcreteSlice) -> TvmInstruction:

@@ -1,8 +1,8 @@
 from z3 import DatatypeRef, LShR, UGT, ULT, BoolRef, If, BitVecRef, UGE, Not
 
-from exceptions import CellUnderflow, OutOfRange, CellOverflow
-from instructions.utils import recast_bitvec, cell_signext
-from tvm_primitives import Cell, CellData, CellDataIndex, RefList, Int257, is_int_fits, CellHash
+from symtvm.decoder.utils import recast_bitvec, cell_signext
+from symtvm.state.exit_codes import CellUnderflow, CellOverflow, OutOfRange
+from symtvm.state.types import Cell, CellData, CellDataIndex, RefList, Int257, CellHash
 
 
 class SymCell:
@@ -89,3 +89,9 @@ class SymCell:
 
     def reprhash(self):
         return CellHash(self.cell)
+
+
+def is_int_fits(i: BitVecRef, numbits: BitVecRef) -> BoolRef:
+    sign_extension = i >> numbits
+    # check if sign extension is 111..111 or 000..000
+    return (sign_extension + 1) & sign_extension == 0

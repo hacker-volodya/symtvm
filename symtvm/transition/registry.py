@@ -1,8 +1,8 @@
 from typing import Dict, Callable, Any
 
-from instructions.bit_utils import hex2ba
-from instructions.instruction import TvmInstruction
-from tvm_primitives import ConcreteSlice
+from symtvm.decoder.bit_utils import hex2ba
+from symtvm.decoder.instruction import TvmInstruction
+from symtvm.state.concreteslice import ConcreteSlice
 
 INSTRUCTIONS: Dict[str, TvmInstruction] = {}
 
