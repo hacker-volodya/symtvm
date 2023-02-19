@@ -18,7 +18,11 @@ class SymCell:
         return Cell.data_len(self.cell)
 
     def ref_size(self):
-        return If(RefList.is_ref0(Cell.refs(self.cell)), Int257.cast(0), Int257.cast(1))
+        return If(RefList.is_ref0(Cell.refs(self.cell)), Int257.cast(0),
+                  If(RefList.is_ref1(Cell.refs(self.cell)), Int257.cast(1),
+                     If(RefList.is_ref2(Cell.refs(self.cell)), Int257.cast(2),
+                        If(RefList.is_ref3(Cell.refs(self.cell)), Int257.cast(3),
+                           Int257.cast(4)))))
 
     def data_overflow(self, numbits) -> BoolRef:
         return UGT(self.data_size(), CellData.size() - recast_bitvec(numbits, CellDataIndex))
@@ -27,7 +31,7 @@ class SymCell:
         return ULT(self.data_size(), recast_bitvec(numbits, CellDataIndex))
 
     def ref_overflow(self, numrefs) -> BoolRef:
-        return UGT(self.ref_size(), 1 - numrefs)
+        return UGT(self.ref_size(), 4 - numrefs)
 
     def ref_underflow(self, numrefs) -> BoolRef:
         return ULT(self.ref_size(), numrefs)
@@ -40,7 +44,8 @@ class SymCell:
     def skip_bits(self, num, check_underflow=True):
         if check_underflow:
             self.exception_cb(CellUnderflow(), [self.data_underflow(num)])
-        self.cell = Cell.cell(Cell.data(self.cell) << recast_bitvec(num, CellData), Cell.data_len(self.cell) - recast_bitvec(num, CellDataIndex), Cell.refs(self.cell))
+        self.cell = Cell.cell(Cell.data(self.cell) << recast_bitvec(num, CellData),
+                              Cell.data_len(self.cell) - recast_bitvec(num, CellDataIndex), Cell.refs(self.cell))
 
     def load_bits(self, num, check_underflow=True):
         bits = self.preload_bits(num, check_underflow)
@@ -55,7 +60,16 @@ class SymCell:
     def skip_ref(self, check_underflow=True):
         if check_underflow:
             self.exception_cb(CellUnderflow(), [self.ref_underflow(1)])
-        self.cell = Cell.cell(Cell.data(self.cell), Cell.data_len(self.cell), RefList.ref0)
+        refs = Cell.refs(self.cell)
+        cell2 = RefList.cell2(refs)
+        cell3 = RefList.cell3(refs)
+        cell4 = RefList.cell4(refs)
+        refs = If(RefList.is_ref0(refs), RefList.ref0,
+                  If(RefList.is_ref1(refs), RefList.ref0,
+                     If(RefList.is_ref2(refs), RefList.ref1(cell2),
+                        If(RefList.is_ref3(refs), RefList.ref2(cell2, cell3),
+                           RefList.ref3(cell2, cell3, cell4)))))
+        self.cell = Cell.cell(Cell.data(self.cell), Cell.data_len(self.cell), refs)
 
     def load_ref(self, check_underflow=True):
         ref = self.preload_ref(check_underflow)
@@ -80,7 +94,8 @@ class SymCell:
         sanitized_appendix = recast_bitvec(bitvec, CellData) & appendix_mask
         shift = CellData.size() - recast_bitvec(numbits, CellData) - recast_bitvec(self.data_size(), CellData)
         new_data = Cell.data(self.cell) | (sanitized_appendix << shift)
-        self.cell = Cell.cell(new_data, Cell.data_len(self.cell) + recast_bitvec(numbits, CellDataIndex), Cell.refs(self.cell))
+        self.cell = Cell.cell(new_data, Cell.data_len(self.cell) + recast_bitvec(numbits, CellDataIndex),
+                              Cell.refs(self.cell))
 
     def store_int(self, i: BitVecRef, numbits, check_overflow=True, check_range=True, signed=False):
         if check_range:
