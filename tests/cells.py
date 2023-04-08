@@ -4,6 +4,7 @@ from z3 import *
 
 from symtvm.state.exit_codes import CellUnderflow
 from symtvm.state.symcell import SymCell
+from symtvm.state.types import Int257
 
 
 class TestSymCell(unittest.TestCase):
@@ -14,7 +15,13 @@ class TestSymCell(unittest.TestCase):
             self.exceptions.append((exc, constrs))
 
         def assertSymTrue(*args):
-            self.assertTrue(is_true(simplify(And(*args))))
+            s = Solver()
+            s.add(Not(And(*args)))
+            r = s.check()
+            if r != unsat:
+                print("PROBLEM EXPRESSION", args)
+                print("EXAMPLE", s.model())
+            self.assertTrue(r == unsat)
 
         self.exc_handler = exc_handler
         self.assertSymTrue = assertSymTrue
@@ -30,8 +37,12 @@ class TestSymCell(unittest.TestCase):
         self.assertSymTrue(*self.exceptions[0][1])
 
     def test_empty_cell_ref_size_is_zero(self):
-        cell = SymCell.empty(self.exc_handler)
+        cell = SymCell.empty()
         self.assertSymTrue(cell.ref_size() == 0)
+
+    def test_unbound_cell_ref_size(self):
+        cell = SymCell.unbound('x')
+        self.assertSymTrue(cell.ref_size() >= 0, cell.ref_size() <= 4)
 
 
 if __name__ == '__main__':

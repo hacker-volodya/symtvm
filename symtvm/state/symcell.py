@@ -1,4 +1,4 @@
-from z3 import DatatypeRef, LShR, UGT, ULT, BoolRef, If, BitVecRef, UGE, Not
+from z3 import DatatypeRef, LShR, UGT, ULT, BoolRef, If, BitVecRef, UGE, Not, Const
 
 from symtvm.decoder.utils import recast_bitvec, cell_signext
 from symtvm.state.exit_codes import CellUnderflow, CellOverflow, OutOfRange
@@ -13,6 +13,10 @@ class SymCell:
     @classmethod
     def empty(cls, exception_cb=lambda exc, constrs: None):
         return cls(Cell.cell(CellData.cast(0), CellDataIndex.cast(0), RefList.ref0), exception_cb)
+
+    @classmethod
+    def unbound(cls, name, exception_cb=lambda exc, constrs: None):
+        return cls(Const(name, Cell), exception_cb)
 
     def data_size(self):
         return Cell.data_len(self.cell)
