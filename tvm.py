@@ -1,3 +1,5 @@
+import importlib.resources
+
 import IPython
 import tvm_valuetypes
 from z3 import BitVec, Const
@@ -11,7 +13,8 @@ import symtvm.transition.cp0
 
 
 def test_tvm():
-    cc = ConcreteSlice(tvm_valuetypes.deserialize_boc(open("simple-wallet.boc", "rb").read()))
+    code = importlib.resources.read_binary("tests.test_contracts", "simple-wallet.boc")
+    cc = ConcreteSlice(tvm_valuetypes.deserialize_boc(code))
     c4 = SymCell.empty()
     c4.store_bits(BitVec('seqno', 32), 32)
     c4.store_bits(BitVec('pubkey', 256), 256)
