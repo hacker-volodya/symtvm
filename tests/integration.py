@@ -14,7 +14,7 @@ from symtvm_tools.stepper import run
 import symtvm.transition.cp0
 
 
-class TestSymCell(unittest.TestCase):
+class TestContracts(unittest.TestCase):
     def test_simple_wallet(self):
         code = importlib.resources.read_binary("tests.test_contracts", "simple-wallet.boc")
         cc = ConcreteSlice(tvm_valuetypes.deserialize_boc(code))
