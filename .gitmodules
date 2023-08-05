@@ -1,0 +1,4 @@
+[submodule "tvm/ton-blockchain"]
+	path = tvm/ton-blockchain
+	url = https://github.com/ton-community/ton-blockchain
+	branch = vm-exec
