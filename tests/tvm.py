@@ -1,34 +1,34 @@
 import unittest
 
-from tvm import *
-from tvm_valuetypes import Cell
-import base64
+from tonpy.tvm.tvm import TVM
+from tonpy.types import Cell, CellSlice, CellBuilder, Stack, StackEntry, Continuation, VmDict
+from tonpy.fift.fift import convert_assembler
+import IPython
 
 
 class TestTVM(unittest.TestCase):
     def setUp(self) -> None:
-        def run_simple_code(code_bytes: bytes):
-            data = Cell()
-            c = Cell()
-            c.data.put_bytes(code_bytes)
-            result = vm_exec(True, 0, [], base64.b64encode(c.serialize_boc()).decode(), base64.b64encode(data.serialize_boc()).decode(), TVMStackEntryTuple([]), 100000, 100000, 100000)
-            print(repr(result))
-            print("-------------------------------")
-            print(result.logs)
-            print("-------------------------------")
-            return result
+        def run_simple_code(code: str, stack=None):
+            if stack is None:
+                stack = []
+            data = CellBuilder().end_cell()
+            t = TVM(code=convert_assembler(code), data=data)
+            t.set_stack(Stack(stack))
+            final_stack = t.run(True)
+            print(t.vm_steps_detailed)
+            return t, final_stack
 
         self.run_simple_code = run_simple_code
 
     def test_empty_tvm(self):
-        result = self.run_simple_code(b"")
-        self.assertTrue(isinstance(result, TVMExecutionResultOk))
-        self.assertTrue(result.exit_code == 0)
+        t, final_stack = self.run_simple_code("<{ }>c")
 
     def test_error(self):
-        result = self.run_simple_code(bytes.fromhex("A0"))
-        self.assertTrue(isinstance(result, TVMExecutionResultFail))
-        self.assertTrue(result.exit_code == 2)
+        t, final_stack = self.run_simple_code("<{ ADD }>c")
+
+    def test_add(self):
+        t, final_stack = self.run_simple_code("<{ ADD }>c", [10, 20])
+        IPython.embed()
 
 if __name__ == '__main__':
     unittest.main()
