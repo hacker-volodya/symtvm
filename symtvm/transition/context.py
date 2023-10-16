@@ -3,7 +3,7 @@ from typing import List
 from z3 import Not, BoolRef, unsat
 
 from symtvm.state.concreteslice import ConcreteSlice
-from symtvm.state.exit_codes import VmError, TypeCheckError, StackUnderflow
+from symtvm.state.exit_codes import VmExitStatus, TypeCheckError, StackUnderflow
 from symtvm.state.sym_state import TvmState
 from symtvm.state.symcell import SymCell
 from symtvm.state.types import StackEntry
@@ -35,7 +35,7 @@ class InsnContext:
     def push_continuation(self, cont: ConcreteSlice):
         self.state.push(cont)
 
-    def error(self, exception: VmError, constraints: List[BoolRef]):
+    def error(self, exception: VmExitStatus, constraints: List[BoolRef]):
         self.successors.err(self.state.error(self.parent_state, exception, constraints))
 
     def typecheck(self, expr, expected):

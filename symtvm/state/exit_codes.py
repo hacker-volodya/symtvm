@@ -1,31 +1,39 @@
-class VmError(RuntimeError):
+class VmExitStatus(RuntimeError):
     code = None
 
     def __str__(self):
         return f"{type(self).__name__} ({self.code})" + (f": {super().__str__()}" if super().__str__() else "")
 
 
-class StackUnderflow(VmError):
+class NormalTermination(VmExitStatus):
+    code = 0
+
+
+class AlternativeTermination(VmExitStatus):
+    code = 1
+
+
+class StackUnderflow(VmExitStatus):
     code = 2
 
 
-class StackOverflow(VmError):
+class StackOverflow(VmExitStatus):
     code = 3
 
 
-class IntegerOverflow(VmError):
+class IntegerOverflow(VmExitStatus):
     code = 4
 
 
-class OutOfRange(VmError):
+class OutOfRange(VmExitStatus):
     code = 5
 
 
-class InvalidOpcode(VmError):
+class InvalidOpcode(VmExitStatus):
     code = 6
 
 
-class TypeCheckError(VmError):
+class TypeCheckError(VmExitStatus):
     code = 7
 
     def __init__(self, expected, got):
@@ -34,17 +42,25 @@ class TypeCheckError(VmError):
         self.got = got
 
 
-class CellOverflow(VmError):
+class CellOverflow(VmExitStatus):
     code = 8
 
 
-class CellUnderflow(VmError):
+class CellUnderflow(VmExitStatus):
     code = 9
 
 
-class DictError(VmError):
+class DictError(VmExitStatus):
     code = 10
 
 
-class OutOfGas(VmError):
+class UnknownError(VmExitStatus):
+    code = 11
+
+
+class FatalError(VmExitStatus):
+    code = 12
+
+
+class OutOfGas(VmExitStatus):
     code = -14
